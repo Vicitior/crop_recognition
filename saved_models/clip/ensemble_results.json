@@ -1,0 +1,27 @@
+{
+  "individual_accs": {
+    "clip-base": 80.43478260869566,
+    "clip-large": 89.85507246376811,
+    "clip-large-336": 89.85507246376811,
+    "clip-vit-large-patch14-336-v2": 92.7536231884058
+  },
+  "ensemble_avg_acc": 95.65217391304348,
+  "ensemble_weighted_acc": 95.65217391304348,
+  "best_single_acc": 92.7536231884058,
+  "improvement": 2.898550724637687,
+  "class_accuracies_avg": {
+    "cotton_boll_opening": 100.0,
+    "cotton_boll_setting": 89.65517241379311,
+    "cotton_flowering": 93.33333333333333,
+    "cotton_seedling": 100.0,
+    "cotton_squaring": 96.42857142857143
+  },
+  "class_accuracies_weighted": {
+    "cotton_boll_opening": 100.0,
+    "cotton_boll_setting": 89.65517241379311,
+    "cotton_flowering": 93.33333333333333,
+    "cotton_seedling": 100.0,
+    "cotton_squaring": 96.42857142857143
+  },
+  "tta": false
+}

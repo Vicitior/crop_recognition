@@ -1,0 +1,44 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+*.egg-info/
+dist/
+build/
+
+# Model weights (too large for git)
+saved_models/**/*.pth
+saved_models/best.pth
+saved_models/last.pth
+
+# Dataset images (too large for git, download separately)
+dataset/train/
+dataset/val/
+dataset/test/
+
+# Raw dataset
+Cotton-Dataset/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+wandb/
+
+# Temporary
+*.tmp
+*.bak

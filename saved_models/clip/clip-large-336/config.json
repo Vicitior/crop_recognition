@@ -1,0 +1,22 @@
+{
+  "method": "lora",
+  "model": "openai/clip-vit-large-patch14-336",
+  "epochs": 15,
+  "batch_size": 16,
+  "lr": 0.001,
+  "lora_rank": 8,
+  "lora_alpha": 16,
+  "num_classes": 5,
+  "class_names": [
+    "cotton_boll_opening",
+    "cotton_boll_setting",
+    "cotton_flowering",
+    "cotton_seedling",
+    "cotton_squaring"
+  ],
+  "best_val_acc": 87.35632183908046,
+  "test_acc": 91.30434782608695,
+  "trainable_params": 396293,
+  "total_params": 433206534,
+  "timestamp": "2026-05-13T02:56:08.143133"
+}
