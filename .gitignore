@@ -11,15 +11,15 @@ venv/
 dist/
 build/
 
-# Model weights (too large for git)
-saved_models/**/*.pth
-saved_models/best.pth
-saved_models/last.pth
+# Model weights (tracked by Git LFS)
+# saved_models/**/*.pth
+# saved_models/best.pth
+# saved_models/last.pth
 
-# Dataset images (too large for git, download separately)
-dataset/train/
-dataset/val/
-dataset/test/
+# Dataset images (tracked by Git LFS)
+# dataset/train/
+# dataset/val/
+# dataset/test/
 
 # Raw dataset
 Cotton-Dataset/
