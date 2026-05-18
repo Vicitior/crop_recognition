@@ -227,6 +227,31 @@ Linear(512, 5)
 - **棉花数据集**: 自行采集和标注，包含 1,323 张棉花不同生长阶段的图片
 - **玉米/小麦**: 待收集 (参见 `scripts/download_dataset.py` 中的收集指南)
 
+## 精度提升方案
+
+本项目实现了5种最新的精度提升方法，详见 [ACCURACY_IMPROVEMENT_GUIDE.md](ACCURACY_IMPROVEMENT_GUIDE.md)。
+
+### 测试时增强 (TTA) - 已验证有效
+
+| 指标 | 无TTA | 有TTA | 提升 |
+|------|-------|-------|------|
+| **总体准确率** | 92.75% | 94.93% | **+2.17%** |
+| cotton_boll_setting | 79.31% | 89.66% | **+10.34%** |
+
+```bash
+# 使用TTA预测
+python scripts/predict_tta.py --image test.jpg --tta-level medium
+```
+
+### 其他方案
+
+| 方案 | 脚本 | 预期提升 |
+|------|------|---------|
+| 类别级数据增强 | `train_with_class_augmentation.py` | +1-3% |
+| 提示学习 (CoOp/MaPLe) | `train_prompt_learning.py` | +2-4% |
+| MMD-LoRA多模态融合 | `train_mmd_lora.py` | +2-5% |
+| 注意力机制增强 | `train_with_attention.py` | +1-2% |
+
 ## 引用
 
 如果您使用了本项目，请引用：

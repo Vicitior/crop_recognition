@@ -1,0 +1,44 @@
+{
+  "model_path": "saved_models/clip/clip-vit-large-patch14-336-v2/best.pth",
+  "tta_level": "medium",
+  "accuracy_without_tta": 92.7536231884058,
+  "accuracy_with_tta": 94.92753623188406,
+  "improvement": 2.173913043478265,
+  "class_details": {
+    "cotton_boll_opening": {
+      "total": 29,
+      "correct_no_tta": 29,
+      "correct_tta": 29,
+      "accuracy_no_tta": 100.0,
+      "accuracy_tta": 100.0
+    },
+    "cotton_boll_setting": {
+      "total": 29,
+      "correct_no_tta": 23,
+      "correct_tta": 26,
+      "accuracy_no_tta": 79.3103448275862,
+      "accuracy_tta": 89.65517241379311
+    },
+    "cotton_flowering": {
+      "total": 30,
+      "correct_no_tta": 29,
+      "correct_tta": 29,
+      "accuracy_no_tta": 96.66666666666667,
+      "accuracy_tta": 96.66666666666667
+    },
+    "cotton_seedling": {
+      "total": 22,
+      "correct_no_tta": 22,
+      "correct_tta": 22,
+      "accuracy_no_tta": 100.0,
+      "accuracy_tta": 100.0
+    },
+    "cotton_squaring": {
+      "total": 28,
+      "correct_no_tta": 25,
+      "correct_tta": 25,
+      "accuracy_no_tta": 89.28571428571429,
+      "accuracy_tta": 89.28571428571429
+    }
+  }
+}
