@@ -216,57 +216,57 @@ def recognize_crop(image, model_label):
 
     # 置信度颜色和样式
     if conf >= 0.7:
-        conf_color = "#28a745"
+        conf_color = "#43a047"
         conf_label = "高"
         conf_emoji = "🎯"
     elif conf >= 0.4:
-        conf_color = "#ffc107"
+        conf_color = "#f9a825"
         conf_label = "中"
         conf_emoji = "⚡"
     else:
-        conf_color = "#dc3545"
+        conf_color = "#e53935"
         conf_label = "低"
         conf_emoji = "❓"
 
     if info:
         result_text = f"""
-<div style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); border-radius: 16px; padding: 24px; border-left: 5px solid {conf_color};">
-    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
-        <span style="font-size: 2.5em;">🌾</span>
+<div style="background: linear-gradient(135deg, #f1f8e9 0%, #e8f5e9 100%); border-radius: 16px; padding: 24px; border-left: 5px solid {conf_color};">
+    <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 20px;">
+        <span style="font-size: 2.2em;">🌾</span>
         <div>
-            <h2 style="margin: 0; color: #343a40; font-size: 1.8em;">{info['crop_name']}</h2>
-            <div style="color: {conf_color}; font-weight: 600; font-size: 1.2em; margin-top: 4px;">
+            <h2 style="margin: 0; color: #2e7d32; font-size: 1.7em;">{info['crop_name']}</h2>
+            <div style="color: {conf_color}; font-weight: 600; font-size: 1.15em; margin-top: 4px;">
                 {info['stage_name']} {conf_emoji}
             </div>
         </div>
     </div>
 
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin: 20px 0;">
-        <div style="background: white; padding: 16px; border-radius: 12px; text-align: center;">
-            <div style="color: #6c757d; font-size: 0.85em; margin-bottom: 8px;">置信度</div>
-            <div style="color: {conf_color}; font-size: 1.8em; font-weight: 700;">{conf:.1%}</div>
-            <div style="color: {conf_color}; font-weight: 500;">{conf_label}</div>
+    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 20px 0;">
+        <div style="background: white; padding: 16px; border-radius: 12px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+            <div style="color: #78909c; font-size: 0.82em; margin-bottom: 6px;">置信度</div>
+            <div style="color: {conf_color}; font-size: 1.7em; font-weight: 700;">{conf:.1%}</div>
+            <div style="color: {conf_color}; font-weight: 500; font-size: 0.85em; margin-top: 2px;">{conf_label}</div>
         </div>
-        <div style="background: white; padding: 16px; border-radius: 12px; text-align: center;">
-            <div style="color: #6c757d; font-size: 0.85em; margin-bottom: 8px;">阶段时间</div>
-            <div style="color: #343a40; font-size: 1.2em; font-weight: 600;">{info['stage_days']}</div>
+        <div style="background: white; padding: 16px; border-radius: 12px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+            <div style="color: #78909c; font-size: 0.82em; margin-bottom: 6px;">阶段时间</div>
+            <div style="color: #37474f; font-size: 1.2em; font-weight: 600; margin-top: 8px;">{info['stage_days']}</div>
         </div>
-        <div style="background: white; padding: 16px; border-radius: 12px; text-align: center;">
-            <div style="color: #6c757d; font-size: 0.85em; margin-bottom: 8px;">全生育期</div>
-            <div style="color: #343a40; font-size: 1.2em; font-weight: 600;">{info['total_days']}</div>
+        <div style="background: white; padding: 16px; border-radius: 12px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+            <div style="color: #78909c; font-size: 0.82em; margin-bottom: 6px;">全生育期</div>
+            <div style="color: #37474f; font-size: 1.2em; font-weight: 600; margin-top: 8px;">{info['total_days']}</div>
         </div>
     </div>
 
-    <div style="background: white; padding: 16px; border-radius: 12px; margin-top: 16px;">
-        <div style="color: #6c757d; font-size: 0.85em; margin-bottom: 8px;">阶段描述</div>
-        <div style="color: #495057; line-height: 1.6;">{info['description']}</div>
+    <div style="background: white; padding: 16px 18px; border-radius: 12px; margin-top: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+        <div style="color: #78909c; font-size: 0.82em; margin-bottom: 6px;">阶段描述</div>
+        <div style="color: #455a64; line-height: 1.6;">{info['description']}</div>
     </div>
 </div>
 """
     else:
         result_text = f"""
-<div style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); border-radius: 16px; padding: 24px; text-align: center;">
-    <h2 style="color: #343a40; margin: 0;">{top['class_name']}</h2>
+<div style="background: linear-gradient(135deg, #f1f8e9 0%, #e8f5e9 100%); border-radius: 16px; padding: 24px; text-align: center;">
+    <h2 style="color: #2e7d32; margin: 0;">{top['class_name']}</h2>
     <div style="color: {conf_color}; font-size: 2em; font-weight: 700; margin: 15px 0;">{conf:.1%}</div>
     <div style="color: {conf_color}; font-weight: 500;">置信度{conf_label}</div>
 </div>
@@ -274,8 +274,8 @@ def recognize_crop(image, model_label):
 
     # Top 3 详情
     details = """
-<div style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); border-radius: 16px; padding: 20px; margin-top: 15px;">
-    <h3 style="color: #495057; margin: 0 0 15px 0; font-size: 1.1em;">📈 候选结果分析</h3>
+<div style="background: linear-gradient(135deg, #f1f8e9 0%, #e8f5e9 100%); border-radius: 16px; padding: 20px; margin-top: 14px;">
+    <h3 style="color: #2e7d32; margin: 0 0 14px 0; font-size: 1.05em;">📈 候选结果分析</h3>
 """
     for i, r in enumerate(results):
         ci_info = r.get("info")
@@ -283,17 +283,17 @@ def recognize_crop(image, model_label):
 
         if ci_info:
             bar_width = int(r['confidence'] * 100)
-            bar_color = "#28a745" if r['confidence'] >= 0.7 else "#ffc107" if r['confidence'] >= 0.4 else "#dc3545"
+            bar_color = "#43a047" if r['confidence'] >= 0.7 else "#f9a825" if r['confidence'] >= 0.4 else "#e53935"
 
             details += f"""
-    <div style="background: white; padding: 14px; border-radius: 10px; margin: 8px 0; display: flex; align-items: center; gap: 15px;">
-        <span style="font-size: 1.5em; width: 40px;">{rank_emoji}</span>
-        <div style="flex: 1;">
-            <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
-                <span style="font-weight: 600; color: #343a40;">{ci_info['crop_name']} · {ci_info['stage_name']}</span>
-                <span style="color: {bar_color}; font-weight: 600;">{r['confidence']:.1%}</span>
+    <div style="background: white; padding: 14px 16px; border-radius: 10px; margin: 8px 0; display: flex; align-items: center; gap: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+        <span style="font-size: 1.4em; width: 36px; text-align: center; flex-shrink: 0;">{rank_emoji}</span>
+        <div style="flex: 1; min-width: 0;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <span style="font-weight: 600; color: #37474f;">{ci_info['crop_name']} · {ci_info['stage_name']}</span>
+                <span style="color: {bar_color}; font-weight: 600; flex-shrink: 0; margin-left: 12px;">{r['confidence']:.1%}</span>
             </div>
-            <div style="background: #e9ecef; border-radius: 8px; height: 8px; overflow: hidden;">
+            <div style="background: #e8f5e9; border-radius: 8px; height: 8px; overflow: hidden;">
                 <div style="background: {bar_color}; width: {bar_width}%; height: 100%; border-radius: 8px; transition: width 0.5s ease;"></div>
             </div>
         </div>
@@ -301,15 +301,15 @@ def recognize_crop(image, model_label):
 """
         else:
             details += f"""
-    <div style="background: white; padding: 14px; border-radius: 10px; margin: 8px 0; display: flex; align-items: center; gap: 15px;">
-        <span style="font-size: 1.5em; width: 40px;">{rank_emoji}</span>
-        <div style="flex: 1;">
-            <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
-                <span style="font-weight: 600; color: #343a40;">{r['class_name']}</span>
-                <span style="color: #6c757d; font-weight: 600;">{r['confidence']:.1%}</span>
+    <div style="background: white; padding: 14px 16px; border-radius: 10px; margin: 8px 0; display: flex; align-items: center; gap: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+        <span style="font-size: 1.4em; width: 36px; text-align: center; flex-shrink: 0;">{rank_emoji}</span>
+        <div style="flex: 1; min-width: 0;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <span style="font-weight: 600; color: #37474f;">{r['class_name']}</span>
+                <span style="color: #78909c; font-weight: 600; flex-shrink: 0; margin-left: 12px;">{r['confidence']:.1%}</span>
             </div>
-            <div style="background: #e9ecef; border-radius: 8px; height: 8px; overflow: hidden;">
-                <div style="background: #6c757d; width: {int(r['confidence'] * 100)}%; height: 100%; border-radius: 8px;"></div>
+            <div style="background: #e8f5e9; border-radius: 8px; height: 8px; overflow: hidden;">
+                <div style="background: #78909c; width: {int(r['confidence'] * 100)}%; height: 100%; border-radius: 8px;"></div>
             </div>
         </div>
     </div>
@@ -329,39 +329,39 @@ def recognize_crop(image, model_label):
         if crop_en and crop_en in CROP_INFO:
             crop_data = CROP_INFO[crop_en]
             cycle_text = f"""
-<div style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); border-radius: 16px; padding: 20px; margin-top: 15px;">
-    <h3 style="color: #495057; margin: 0 0 15px 0; font-size: 1.1em;">🌱 {info['crop_name']}生长周期</h3>
-    <div style="background: white; padding: 16px; border-radius: 12px; margin-bottom: 15px;">
-        <div style="color: #6c757d; font-size: 0.85em; margin-bottom: 8px;">全生育期</div>
-        <div style="color: #343a40; font-size: 1.3em; font-weight: 600;">{crop_data['total_days']}</div>
+<div style="background: linear-gradient(135deg, #f1f8e9 0%, #e8f5e9 100%); border-radius: 16px; padding: 20px; margin-top: 14px;">
+    <h3 style="color: #2e7d32; margin: 0 0 14px 0; font-size: 1.05em;">🌱 {info['crop_name']}生长周期</h3>
+    <div style="background: white; padding: 16px; border-radius: 12px; margin-bottom: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+        <div style="color: #78909c; font-size: 0.82em; margin-bottom: 6px;">全生育期</div>
+        <div style="color: #37474f; font-size: 1.25em; font-weight: 600;">{crop_data['total_days']}</div>
     </div>
 """
             for stage_en, stage_data in crop_data["stages"].items():
                 is_current = (stage_en == info.get("stage_en"))
                 if is_current:
                     cycle_text += f"""
-    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 14px; border-radius: 10px; margin: 8px 0;">
+    <div style="background: linear-gradient(135deg, #43a047 0%, #2e7d32 100%); color: white; padding: 14px 16px; border-radius: 10px; margin: 8px 0; box-shadow: 0 4px 12px rgba(46, 125, 50, 0.25);">
         <div style="display: flex; justify-content: space-between; align-items: center;">
-            <div>
-                <div style="font-weight: 600; font-size: 1.1em;">{stage_data['name_cn']}</div>
-                <div style="opacity: 0.9; margin-top: 4px;">{stage_data['description']}</div>
+            <div style="flex: 1; min-width: 0;">
+                <div style="font-weight: 600; font-size: 1.05em;">{stage_data['name_cn']}</div>
+                <div style="opacity: 0.9; margin-top: 4px; font-size: 0.9em;">{stage_data['description']}</div>
             </div>
-            <div style="background: rgba(255,255,255,0.2); padding: 6px 12px; border-radius: 20px; font-weight: 500;">
+            <div style="background: rgba(255,255,255,0.2); padding: 5px 12px; border-radius: 20px; font-weight: 500; flex-shrink: 0; margin-left: 12px; font-size: 0.9em;">
                 {stage_data['days']}
             </div>
         </div>
-        <div style="margin-top: 10px; font-weight: 500;">📍 当前阶段</div>
+        <div style="margin-top: 8px; font-weight: 500; font-size: 0.85em;">📍 当前阶段</div>
     </div>
 """
                 else:
                     cycle_text += f"""
-    <div style="background: white; padding: 14px; border-radius: 10px; margin: 8px 0; border-left: 4px solid #e9ecef;">
+    <div style="background: white; padding: 14px 16px; border-radius: 10px; margin: 8px 0; border-left: 4px solid #c8e6c9; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
         <div style="display: flex; justify-content: space-between; align-items: center;">
-            <div>
-                <div style="font-weight: 500; color: #495057;">{stage_data['name_cn']}</div>
-                <div style="color: #6c757d; font-size: 0.9em; margin-top: 4px;">{stage_data['description']}</div>
+            <div style="flex: 1; min-width: 0;">
+                <div style="font-weight: 500; color: #37474f;">{stage_data['name_cn']}</div>
+                <div style="color: #78909c; font-size: 0.88em; margin-top: 4px;">{stage_data['description']}</div>
             </div>
-            <div style="color: #6c757d; font-weight: 500;">{stage_data['days']}</div>
+            <div style="color: #78909c; font-weight: 500; flex-shrink: 0; margin-left: 12px; font-size: 0.9em;">{stage_data['days']}</div>
         </div>
     </div>
 """
@@ -377,8 +377,8 @@ def build_ui():
 
     /* 全局样式 */
     .gradio-container {
-        font-family: 'Inter', sans-serif;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        font-family: 'Inter', 'Microsoft YaHei', sans-serif;
+        background: linear-gradient(160deg, #e8f5e9 0%, #c8e6c9 30%, #a5d6a7 70%, #81c784 100%);
         min-height: 100vh;
         padding: 20px;
     }
@@ -387,26 +387,26 @@ def build_ui():
     .main-container {
         max-width: 1400px;
         margin: 0 auto;
-        background: rgba(255,255,255,0.95);
+        background: rgba(255,255,255,0.97);
         border-radius: 24px;
         padding: 40px;
-        box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+        box-shadow: 0 20px 60px rgba(0,0,0,0.1);
         backdrop-filter: blur(10px);
     }
 
     /* 标题区域 */
     .header-area {
         text-align: center;
-        padding: 30px 0 40px 0;
-        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        padding: 32px 0 36px 0;
+        background: linear-gradient(135deg, #e8f5e9 0%, #f1f8e9 100%);
         border-radius: 20px;
         margin-bottom: 30px;
-        border: 1px solid rgba(0,0,0,0.05);
+        border: 1px solid rgba(76, 175, 80, 0.15);
     }
     .main-title {
         font-size: 2.8em;
         font-weight: 700;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg, #2e7d32 0%, #558b2f 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         margin: 0;
@@ -414,14 +414,14 @@ def build_ui():
         letter-spacing: -0.02em;
     }
     .subtitle {
-        color: #6c757d;
-        font-size: 1.15em;
+        color: #5f6b7a;
+        font-size: 1.1em;
         margin-top: 12px;
         font-weight: 400;
     }
     .header-icon {
         font-size: 3em;
-        margin-bottom: 15px;
+        margin-bottom: 12px;
         display: block;
     }
 
@@ -429,25 +429,25 @@ def build_ui():
     .card {
         background: white;
         border-radius: 20px;
-        padding: 28px;
-        box-shadow: 0 10px 40px rgba(0,0,0,0.06);
+        padding: 24px 28px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.05);
         margin: 10px;
-        border: 1px solid rgba(0,0,0,0.04);
+        border: 1px solid rgba(0,0,0,0.06);
         transition: transform 0.3s ease, box-shadow 0.3s ease;
     }
     .card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 15px 50px rgba(0,0,0,0.1);
+        transform: translateY(-3px);
+        box-shadow: 0 8px 30px rgba(0,0,0,0.08);
     }
 
     /* 输入区 */
     .input-card {
-        border-top: 5px solid #667eea;
+        border-top: 4px solid #43a047;
     }
     .input-card h3 {
-        color: #667eea;
+        color: #2e7d32;
         margin-top: 0;
-        font-size: 1.3em;
+        font-size: 1.2em;
         font-weight: 600;
         display: flex;
         align-items: center;
@@ -456,12 +456,12 @@ def build_ui():
 
     /* 结果区 */
     .result-card {
-        border-top: 5px solid #764ba2;
+        border-top: 4px solid #66bb6a;
     }
     .result-card h3 {
-        color: #764ba2;
+        color: #2e7d32;
         margin-top: 0;
-        font-size: 1.3em;
+        font-size: 1.2em;
         font-weight: 600;
         display: flex;
         align-items: center;
@@ -470,20 +470,19 @@ def build_ui():
 
     /* 按钮 */
     .recognize-btn {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+        background: linear-gradient(135deg, #43a047 0%, #2e7d32 100%) !important;
         border: none !important;
         border-radius: 14px !important;
-        font-size: 1.2em !important;
+        font-size: 1.15em !important;
         font-weight: 600 !important;
-        padding: 18px 0 !important;
-        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
-        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4) !important;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
+        padding: 16px 0 !important;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        box-shadow: 0 6px 20px rgba(46, 125, 50, 0.3) !important;
+        letter-spacing: 0.03em;
     }
     .recognize-btn:hover {
-        transform: translateY(-3px) scale(1.02) !important;
-        box-shadow: 0 12px 35px rgba(102, 126, 234, 0.5) !important;
+        transform: translateY(-2px) !important;
+        box-shadow: 0 10px 30px rgba(46, 125, 50, 0.4) !important;
     }
     .recognize-btn:active {
         transform: translateY(0) !important;
@@ -492,43 +491,33 @@ def build_ui():
     /* 模型选择标签 */
     .model-label {
         font-weight: 600;
-        color: #667eea;
+        color: #2e7d32;
         margin-bottom: 12px;
         font-size: 1em;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
+        letter-spacing: 0.02em;
     }
 
     /* 下拉菜单样式 */
     .gradio-dropdown {
         border-radius: 12px !important;
-        border: 2px solid #e9ecef !important;
+        border: 2px solid #e0e0e0 !important;
         transition: all 0.3s ease !important;
     }
     .gradio-dropdown:focus-within {
-        border-color: #667eea !important;
-        box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1) !important;
+        border-color: #43a047 !important;
+        box-shadow: 0 0 0 3px rgba(67, 160, 71, 0.12) !important;
     }
 
     /* 图片上传区域 */
     .gradio-image {
         border-radius: 16px !important;
         overflow: hidden;
-        border: 3px dashed #dee2e6 !important;
+        border: 3px dashed #c8e6c9 !important;
         transition: all 0.3s ease !important;
     }
     .gradio-image:hover {
-        border-color: #667eea !important;
-        background: rgba(102, 126, 234, 0.02) !important;
-    }
-
-    /* 结果文字样式 */
-    .result-text {
-        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-        border-radius: 16px;
-        padding: 20px;
-        margin: 10px 0;
-        border-left: 5px solid #667eea;
+        border-color: #43a047 !important;
+        background: rgba(67, 160, 71, 0.03) !important;
     }
 
     /* 底部作物信息 */
@@ -537,66 +526,46 @@ def build_ui():
         background: white;
         border-radius: 16px;
         overflow: hidden;
-        box-shadow: 0 5px 20px rgba(0,0,0,0.05);
+        box-shadow: 0 4px 16px rgba(0,0,0,0.04);
     }
     .crop-accordion .gradio-accordion {
         border-radius: 16px !important;
         overflow: hidden;
     }
 
-    /* 置信度指示器 */
-    .confidence-high {
-        color: #28a745;
-        font-weight: 600;
-    }
-    .confidence-medium {
-        color: #ffc107;
-        font-weight: 600;
-    }
-    .confidence-low {
-        color: #dc3545;
-        font-weight: 600;
-    }
-
     /* 动画效果 */
     @keyframes fadeInUp {
-        from {
-            opacity: 0;
-            transform: translateY(20px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
+        from { opacity: 0; transform: translateY(16px); }
+        to { opacity: 1; transform: translateY(0); }
     }
     .fade-in {
-        animation: fadeInUp 0.6s ease-out;
+        animation: fadeInUp 0.5s ease-out;
     }
 
     /* 特性标签 */
     .feature-tag {
         display: inline-block;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg, #66bb6a 0%, #43a047 100%);
         color: white;
-        padding: 6px 14px;
+        padding: 5px 14px;
         border-radius: 20px;
         font-size: 0.85em;
         font-weight: 500;
         margin: 4px;
-        box-shadow: 0 3px 10px rgba(102, 126, 234, 0.3);
+        box-shadow: 0 2px 8px rgba(67, 160, 71, 0.25);
     }
 
     /* 底部信息 */
     .footer-info {
         text-align: center;
-        padding: 25px 0;
-        color: #6c757d;
-        font-size: 0.95em;
-        border-top: 1px solid #e9ecef;
+        padding: 20px 0;
+        color: #78909c;
+        font-size: 0.9em;
+        border-top: 1px solid #e8f5e9;
         margin-top: 30px;
     }
     .footer-info a {
-        color: #667eea;
+        color: #43a047;
         text-decoration: none;
         font-weight: 500;
     }
@@ -677,11 +646,11 @@ def build_ui():
                 )
 
                 gr.HTML('''
-                <div style="text-align: center; padding: 15px 0; color: #6c757d; font-size: 0.9em;">
+                <div style="text-align: center; padding: 15px 0; color: #78909c; font-size: 0.88em;">
                     <div style="display: flex; justify-content: center; gap: 20px; flex-wrap: wrap;">
                         <span>🎯 支持3种农作物</span>
                         <span>🌱 识别15个生长阶段</span>
-                        <span>⚡ 毫秒级响应</span>
+   
                     </div>
                 </div>
                 ''')
@@ -694,9 +663,9 @@ def build_ui():
                 </div>
                 ''')
                 with gr.Group():
-                    result_text = gr.Markdown()
-                    details_text = gr.Markdown()
-                    cycle_text = gr.Markdown()
+                    result_text = gr.HTML()
+                    details_text = gr.HTML()
+                    cycle_text = gr.HTML()
 
         # 底部：支持的作物信息
         with gr.Accordion("🌾 支持识别的作物与生长阶段", open=False, elem_classes=["crop-accordion"]):
@@ -714,7 +683,7 @@ def build_ui():
         <div class="footer-info">
             <p>基于 CLIP / SigLIP 视觉-语言模型 · 支持零样本识别与 LoRA 微调</p>
             <p style="margin-top: 8px; font-size: 0.85em;">
-                农作物生长阶段识别系统 © 2024 · 为精准农业提供智能支持
+                农作物生长阶段识别系统 ©· 为精准农业提供智能支持
             </p>
         </div>
         ''')
@@ -723,13 +692,13 @@ def build_ui():
             global classifier, current_model_key
 
             if image is None:
-                return "> 请先上传一张农作物图片", "", ""
+                return '<div style="text-align:center; padding:40px; color:#78909c; font-size:1.1em;">📷 请先上传一张农作物图片</div>', "", ""
 
             try:
                 if model_label == "EfficientNet微调模型":
                     model_path = "saved_models/best.pth"
                     if not os.path.isfile(model_path):
-                        return "> 错误: EfficientNet微调模型不存在", "", ""
+                        return '<div style="text-align:center; padding:30px; color:#e53935;">❌ EfficientNet微调模型不存在</div>', "", ""
                     if current_model_key != "efficientnet_finetuned":
                         load_finetuned(model_path)
                 elif model_label == "CLIP微调模型":
@@ -746,7 +715,7 @@ def build_ui():
                             model_path = p
                             break
                     if model_path is None:
-                        return "> 错误: CLIP微调模型不存在，请先运行训练", "", ""
+                        return '<div style="text-align:center; padding:30px; color:#e53935;">❌ CLIP微调模型不存在，请先运行训练</div>', "", ""
                     if current_model_key != "clip_finetuned":
                         load_finetuned_clip(model_path)
                 else:
@@ -759,7 +728,7 @@ def build_ui():
                 import traceback
                 error_msg = traceback.format_exc()
                 print(f"识别错误: {error_msg}")
-                return f"> 识别过程出错: {str(e)}", "", ""
+                return f'<div style="text-align:center; padding:30px; color:#e53935;">❌ 识别出错: {str(e)}</div>', "", ""
 
         submit_btn.click(
             fn=recognize_with_finetuned,
