@@ -39,12 +39,18 @@ VISUAL_DESCRIPTIONS = {
         ],
         "jointing": [
             # 核心特征：粗壮绿茎，可见节间（关节），齐腰高，无穗无棒
-            "corn plants at waist height with thick green stems showing prominent swollen nodes or joints, no ears or tassels visible",
-            "tall vegetative corn stalks with clearly visible stem nodes, broad leaves spreading outward, no reproductive structures",
-            "corn field with rapidly growing plants, thick green stalks with visible knuckle-like nodes, leaves emerging from each node",
-            "mid-growth corn, stems thickening with distinct joint segments, plant height reaching chest level, purely vegetative growth",
-            "corn stalks showing elongated internodes, green stems with visible swelling at joints, no tassels no silk no ears",
-            "vegetative corn plants with strong upright stems, visible nodes along the stalk, leaves alternating at each joint",
+            # 优化：增加精确特征、负样本描述、场景描述
+            "corn plants at vegetative stage with thick green stems showing 3-5 visible swollen nodes, height 60-120cm, NO ear development, NO tassels",
+            "jointing corn stalks with elongated internodes 15-20cm apart, leaves alternating at each node, stems 2-3cm diameter, purely vegetative growth",
+            "corn field showing rapid vertical growth, plants reaching waist to chest height, thick green stalks with distinct joint segments, no reproductive structures",
+            "close-up of corn stem node showing leaf emergence, swollen joint area, green healthy vegetative growth, NOT the short seedling stage",
+            "vegetative corn with strong upright stems, visible knuckle-like nodes along the stalk, broad leaves spreading outward, NO ear shoots visible",
+            "mid-growth corn at jointing phase, stems thickening with distinct joint segments, plant height reaching adult waist, NOT the tall flowering tasseling stage",
+            # 负样本描述：强调不是什么
+            "corn plants with thick green stems showing prominent joints, NOT the short stubby seedlings under 30cm, NOT the tall plants with tassels at the top",
+            "vegetative corn stalks with swollen stem nodes, distinctly different from filling stage which shows visible ear cobs with developing kernels",
+            # 场景描述
+            "summer cornfield with plants at jointing stage, rapid vegetative growth, thick green stems with visible nodes, no signs of flowering or ear formation",
         ],
         "tasseling": [
             # 核心特征：顶部有穗状花序（tassel），穗部吐出丝状花丝，但籽粒尚未灌浆
@@ -57,12 +63,18 @@ VISUAL_DESCRIPTIONS = {
         ],
         "filling": [
             # 核心特征：棒子上有饱满黄色籽粒，苞叶包裹，茎秆仍绿
-            "corn ears with rows of plump yellow kernels visible, green husks partially wrapping the cob, stalks still green",
-            "maturing corn field, full-sized ears bending stalks slightly, yellow kernels filling out under husks",
-            "corn plants with bulging ear cobs, kernels in dough or milk stage, husks starting to loosen but not yet dry",
-            "grain-filling corn, yellow kernel rows clearly visible through partially open green husks, heavy ears",
-            "corn with developing grain, ears at their full size, kernels transitioning from white to yellow, stalks green and healthy",
-            "corn field showing ear development, plump kernels inside husks, some ears with silk turning brown",
+            # 优化：增加精确特征、负样本描述、场景描述
+            "corn plants WITH visible ear cobs at middle of stalk, rows of plump yellow kernels visible through partially open husks, stalks still green",
+            "maturing corn field showing ear development, full-sized ears bending stalks slightly, yellow kernels filling out, silk turning brown",
+            "close-up of corn ear with yellow kernels in dough stage, husks starting to loosen, heavy ear bending stalk, NOT the vegetative jointing stage with no ears",
+            "corn plants with bulging ear cobs containing developing grain, kernels transitioning from white to yellow, ear position at middle height of plant",
+            "grain-filling corn showing visible kernel rows through green husks, ears at full size, stalks green and healthy, post-flowering reproductive stage",
+            "corn field with developing ears on most plants, yellow kernels visible, silk browning, NOT the mature brown dried stage, NOT the vegetative stage with no ears",
+            # 负样本描述：强调不是什么
+            "corn plants WITH visible ear cobs showing developing kernels, unlike jointing stage which has NO ear development, unlike maturity stage which has brown dried plants",
+            "corn with bulging husks containing grain, stalks still green but ears prominent, distinctly different from tasseling stage which only has silk without filled ears",
+            # 场景描述
+            "late summer cornfield with plants at grain-filling stage, visible ear development on most plants, yellow kernels forming, heavy ears bending stalks",
         ],
         "maturity": [
             # 核心特征：全株枯黄/褐色，苞叶张开干枯，籽粒坚硬，黑层形成
@@ -92,15 +104,24 @@ VISUAL_DESCRIPTIONS = {
             "wheat field with thick vegetative growth, plants forming dense rosettes, no vertical stem elongation",
             "tillering wheat, multiple green shoots per plant base, overall low-growing carpet-like canopy",
             "wheat plants with many tillers emerging, forming clumps of leaves, height still under 30cm, no visible stems",
+            # 对比描述：强调与出苗期和拔节期的区别
+            "wheat plants with multiple bushy tillers from the base, distinctly different from seedling stage which has single thin shoots",
+            "tillering wheat forming dense low clumps, unlike jointing stage which shows tall elongated stems with visible nodes",
         ],
         "jointing": [
             # 核心特征：茎秆拔高伸长，可见节间，无穗
-            "wheat stems elongating and growing upright, visible nodes on the hollow stems, no grain heads yet",
-            "wheat at jointing stage, tall green stalks with swollen nodes, stems thickening, pre-heading growth",
-            "jointing wheat field, plants noticeably taller, stems with visible joints, leaves still green and upright",
-            "wheat stems with elongated internodes, hollow round stalks with visible nodes, no ear emergence",
-            "rapidly growing wheat, stems reaching knee to waist height, distinct nodes visible, no reproductive structures",
-            "wheat at stem elongation, upright green stalks with joint swelling, plants growing taller but no grain heads",
+            # 优化：增加精确特征、负样本描述、场景描述
+            "wheat stems elongating and growing upright, 2-3 visible nodes on hollow round stems, height 30-60cm, NO grain heads emerging from flag leaf",
+            "jointing wheat with tall green stalks showing swollen nodes every 10-15cm, stems thickening, pre-heading vegetative growth, leaves still upright",
+            "wheat at stem elongation phase, plants noticeably taller than tillering stage, stems with visible joints, NO ear emergence from sheath",
+            "close-up of wheat stem showing elongated internodes and node swelling, hollow round stalk, no grain heads visible at top",
+            "rapidly growing wheat field with plants reaching knee to waist height, distinct nodes visible on stems, purely vegetative growth",
+            "wheat at jointing stage with upright green stalks, leaf sheaths still wrapped around stems, NO visible grain spikes emerging",
+            # 负样本描述：强调不是什么
+            "wheat stems with visible elongated internodes and swollen nodes, NOT the low bushy tillering stage with multiple shoots from base, NOT the heading stage with visible grain heads",
+            "jointing wheat with tall upright stems showing clear node swelling, distinctly different from seedling stage which is very short, different from heading stage which has grain heads at top",
+            # 场景描述
+            "spring wheat field with plants at jointing stage, rapid vertical growth, stems elongating with visible nodes, no signs of heading or flowering",
         ],
         "heading": [
             # 核心特征：穗从旗叶鞘中抽出，穗部可见，花药悬挂
@@ -142,12 +163,18 @@ VISUAL_DESCRIPTIONS = {
         ],
         "flowering": [
             # 核心特征：花朵开放，白色/乳白/粉红色花瓣，黄色花蕊
-            "cotton plants with open flowers, creamy white petals with dark red spots at the base, yellow stamens in center",
-            "flowering cotton field, large open blooms with white petals turning pink, prominent yellow pollen-bearing stamens",
-            "cotton in full bloom, distinctive flowers with white or cream petals, petals developing pink or red coloration",
-            "cotton flowers fully open, white petals with characteristic dark markings at petal base, yellow center",
-            "blooming cotton, open flowers visible among green foliage, petals white to pink, yellow stamen column",
-            "cotton field with scattered open flowers, cream-white petals aging to pink, yellow stamens visible",
+            # 优化：增加精确特征、负样本描述、场景描述
+            "cotton plants with OPEN flowers showing creamy white petals (5 petals) with dark red spots at base, prominent yellow staminal column in center",
+            "flowering cotton field with large conspicuous blooms, petals white turning pink with age, yellow pollen-bearing stamens visible, NO green closed buds",
+            "cotton at anthesis stage, distinctive open flowers among green foliage, petals 3-5cm wide, dark nectary spots at petal base, yellow stamens",
+            "close-up of cotton flower fully open, white petals with characteristic dark markings at base, yellow stamen column, NOT the closed green buds of squaring stage",
+            "blooming cotton with scattered open flowers on plants, petals white to pink, yellow stamens visible, NO green round bolls visible",
+            "cotton field during flowering period, open blooms visible on multiple plants, creamy white petals aging to pink, reproductive stage",
+            # 负样本描述：强调不是什么
+            "cotton plants with OPEN flowers showing white or pink petals and yellow stamens, NOT the squaring stage with only closed green buds, NOT the boll-setting stage with green round capsules",
+            "flowering cotton with large conspicuous blooms, distinctly different from boll-setting stage which has green round fruit capsules instead of open flowers",
+            # 场景描述
+            "summer cotton field with plants in full bloom, open white flowers visible among green foliage, distinctive cotton flowers with dark petal base markings",
         ],
         "boll_setting": [
             # 核心特征：绿色圆球形棉铃（boll），无开放花朵，叶片仍绿
@@ -157,6 +184,9 @@ VISUAL_DESCRIPTIONS = {
             "cotton plants bearing young green bolls, round hard capsules, some dried flower remnants at boll tips",
             "boll-setting cotton, green spherical bolls growing on branch nodes, plant canopy still green and healthy",
             "cotton with developing fruit, green round bolls visible among the foliage, no white cotton fiber exposed",
+            # 对比描述：强调与开花期和吐絮期的区别
+            "cotton plants with green round bolls but NO open flowers, unlike flowering stage which has white or pink petals",
+            "boll-setting cotton with firm green spherical capsules, distinctly different from boll-opening stage where bolls split open revealing white fiber",
         ],
         "boll_opening": [
             # 核心特征：棉铃开裂，白色棉絮外露，部分叶片枯黄
