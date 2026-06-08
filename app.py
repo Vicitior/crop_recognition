@@ -1,9 +1,18 @@
 import os
 import argparse
+import json
+from datetime import datetime
 
 import torch
 import gradio as gr
 from PIL import Image
+
+# 注册 HEIC 格式支持
+try:
+    import pillow_heif
+    pillow_heif.register_heif_opener()
+except ImportError:
+    pass
 
 from models.growth_stages import CROP_INFO, CLASS_MAP
 
@@ -13,29 +22,110 @@ classifier = None
 mode = "clip"
 current_model_key = None  # 当前已加载的模型key
 
-# 模型显示名称
+# 作物类型和生长阶段映射
+CROP_STAGE_MAP = {
+    "corn_seedling": {"crop_cn": "玉米", "stage_cn": "出苗期", "crop_en": "corn", "stage_en": "seedling"},
+    "corn_jointing": {"crop_cn": "玉米", "stage_cn": "拔节期", "crop_en": "corn", "stage_en": "jointing"},
+    "corn_tasseling": {"crop_cn": "玉米", "stage_cn": "抽穗期", "crop_en": "corn", "stage_en": "tasseling"},
+    "corn_filling": {"crop_cn": "玉米", "stage_cn": "灌浆期", "crop_en": "corn", "stage_en": "filling"},
+    "corn_maturity": {"crop_cn": "玉米", "stage_cn": "成熟期", "crop_en": "corn", "stage_en": "maturity"},
+    "wheat_seedling": {"crop_cn": "小麦", "stage_cn": "出苗期", "crop_en": "wheat", "stage_en": "seedling"},
+    "wheat_tillering": {"crop_cn": "小麦", "stage_cn": "分蘖期", "crop_en": "wheat", "stage_en": "tillering"},
+    "wheat_jointing": {"crop_cn": "小麦", "stage_cn": "拔节期", "crop_en": "wheat", "stage_en": "jointing"},
+    "wheat_heading": {"crop_cn": "小麦", "stage_cn": "抽穗期", "crop_en": "wheat", "stage_en": "heading"},
+    "wheat_maturity": {"crop_cn": "小麦", "stage_cn": "成熟期", "crop_en": "wheat", "stage_en": "maturity"},
+    "cotton_seedling": {"crop_cn": "棉花", "stage_cn": "苗期", "crop_en": "cotton", "stage_en": "seedling"},
+    "cotton_squaring": {"crop_cn": "棉花", "stage_cn": "蕾期", "crop_en": "cotton", "stage_en": "squaring"},
+    "cotton_flowering": {"crop_cn": "棉花", "stage_cn": "开花期", "crop_en": "cotton", "stage_en": "flowering"},
+    "cotton_boll_setting": {"crop_cn": "棉花", "stage_cn": "结铃期", "crop_en": "cotton", "stage_en": "boll_setting"},
+    "cotton_boll_opening": {"crop_cn": "棉花", "stage_cn": "吐絮期", "crop_en": "cotton", "stage_en": "boll_opening"},
+}
+
+# 作物类型选项
+CROP_TYPES = [
+    "玉米 (corn)",
+    "小麦 (wheat)",
+    "棉花 (cotton)"
+]
+
+# 生长阶段选项（按作物类型）
+GROWTH_STAGES = {
+    "玉米 (corn)": ["出苗期 (seedling)", "拔节期 (jointing)", "抽穗期 (tasseling)", "灌浆期 (filling)", "成熟期 (maturity)"],
+    "小麦 (wheat)": ["出苗期 (seedling)", "分蘖期 (tillering)", "拔节期 (jointing)", "抽穗期 (heading)", "成熟期 (maturity)"],
+    "棉花 (cotton)": ["苗期 (seedling)", "蕾期 (squaring)", "开花期 (flowering)", "结铃期 (boll_setting)", "吐絮期 (boll_opening)"]
+}
+
+
+def save_uploaded_image(image, crop_type, growth_stage, user_note=""):
+    """保存用户上传的图片到训练集"""
+    if image is None:
+        return "❌ 请先上传图片"
+
+    try:
+        # 解析作物类型和生长阶段
+        crop_en = crop_type.split("(")[1].rstrip(")")
+        stage_en = growth_stage.split("(")[1].rstrip(")")
+
+        # 生成保存路径
+        class_name = f"{crop_en}_{stage_en}"
+        save_dir = os.path.join("dataset", "user_feedback", class_name)
+        os.makedirs(save_dir, exist_ok=True)
+
+        # 生成唯一文件名
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"user_{timestamp}.jpg"
+        save_path = os.path.join(save_dir, filename)
+
+        # 保存图片
+        if image.mode != "RGB":
+            image = image.convert("RGB")
+        image.save(save_path, "JPEG", quality=95)
+
+        # 记录元数据
+        metadata = {
+            "filename": filename,
+            "crop_type": crop_type,
+            "growth_stage": growth_stage,
+            "class_name": class_name,
+            "user_note": user_note,
+            "timestamp": timestamp,
+            "source": "web_upload"
+        }
+
+        # 保存元数据到 JSON 文件
+        metadata_path = os.path.join(save_dir, f"{filename.rsplit('.', 1)[0]}.json")
+        with open(metadata_path, "w", encoding="utf-8") as f:
+            json.dump(metadata, f, ensure_ascii=False, indent=2)
+
+        return f"✅ 图片已保存!\n📁 路径: {save_path}\n🏷️ 类别: {class_name}\n📝 备注: {user_note if user_note else '无'}"
+
+    except Exception as e:
+        return f"❌ 保存失败: {str(e)}"
+
+
+def quick_save_image(image, recommended_crop, recommended_stage, user_note=""):
+    """一键保存图片（使用识别结果）"""
+    if image is None:
+        return "❌ 请先上传图片"
+
+    if not recommended_crop or not recommended_stage:
+        return "❌ 请先进行识别，或手动选择作物类型和生长阶段"
+
+    # 直接使用推荐的作物类型和生长阶段
+    return save_uploaded_image(image, recommended_crop, recommended_stage, user_note)
+
+# 模型显示名称（只保留最佳的零样本模型）
 MODEL_LABELS = {
-    "siglip2-so400m": "SigLIP2-so400m (零样本)",
-    "siglip2-base": "SigLIP2-base (零样本)",
-    "siglip-so400m": "SigLIP-so400m (零样本)",
-    "siglip-large": "SigLIP-large (零样本)",
+    "siglip2-so400m": "SigLIP2-so400m (零样本-最强)",
     "clip-large-336": "CLIP ViT-L/14@336 (零样本)",
-    "clip-large": "CLIP ViT-L/14 (零样本)",
-    "clip-base": "CLIP ViT-B/32 (零样本)",
 }
 LABEL_TO_KEY = {v: k for k, v in MODEL_LABELS.items()}
 
-# 微调模型选项（不在MODEL_LABELS中，单独处理）
+# 微调模型选项（推荐使用）
 FINETUNED_CHOICES = [
-    "CLIP微调模型",
-    "EfficientNet微调模型",
-    "SigLIP2-so400m (零样本)",
-    "SigLIP2-base (零样本)",
-    "SigLIP-so400m (零样本)",
-    "SigLIP-large (零样本)",
+    "CLIP微调模型 (推荐)",
+    "SigLIP2-so400m (零样本-最强)",
     "CLIP ViT-L/14@336 (零样本)",
-    "CLIP ViT-L/14 (零样本)",
-    "CLIP ViT-B/32 (零样本)",
 ]
 
 
@@ -188,6 +278,43 @@ def recognize_crop(image, model_label):
         for prob, idx in zip(top_probs, top_indices):
             class_name = class_names[idx.item()]
             # 查找类别信息
+            info = None
+            for k, v in CLASS_MAP.items():
+                if k == class_name:
+                    info = {
+                        "crop_name": v["crop_cn"],
+                        "stage_name": v["stage_cn"],
+                        "stage_days": v["days"],
+                        "total_days": v["total_days"],
+                        "description": v["description"],
+                        "crop_en": v["crop_en"],
+                        "stage_en": v["stage_en"],
+                    }
+                    break
+            results.append({
+                "class_name": class_name,
+                "confidence": prob.item(),
+                "info": info
+            })
+    elif isinstance(classifier, dict) and classifier.get("type") == "efficientnet":
+        # EfficientNet微调模型
+        from torchvision import transforms
+        transform = transforms.Compose([
+            transforms.Resize(256),
+            transforms.CenterCrop(224),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                                 std=[0.229, 0.224, 0.225])
+        ])
+        image_tensor = transform(image).unsqueeze(0).to(classifier["device"])
+        with torch.no_grad():
+            outputs = classifier["model"](image_tensor)
+            probs = torch.softmax(outputs, dim=1)
+        class_names = classifier["class_names"]
+        top_probs, top_indices = probs[0].topk(min(3, len(class_names)))
+        results = []
+        for prob, idx in zip(top_probs, top_indices):
+            class_name = class_names[idx.item()]
             info = None
             for k, v in CLASS_MAP.items():
                 if k == class_name:
@@ -368,7 +495,21 @@ def recognize_crop(image, model_label):
 
             cycle_text += "</div>"
 
-    return result_text, details, cycle_text
+    # 提取推荐的作物类型和生长阶段
+    recommended_crop = ""
+    recommended_stage = ""
+    if info:
+        crop_en = info.get("crop_en", "")
+        stage_en = info.get("stage_en", "")
+        if crop_en and stage_en:
+            # 查找对应的中文名称
+            for key, value in CROP_STAGE_MAP.items():
+                if value["crop_en"] == crop_en and value["stage_en"] == stage_en:
+                    recommended_crop = f"{value['crop_cn']} ({crop_en})"
+                    recommended_stage = f"{value['stage_cn']} ({stage_en})"
+                    break
+
+    return result_text, details, cycle_text, recommended_crop, recommended_stage
 
 
 def build_ui():
@@ -573,6 +714,53 @@ def build_ui():
         text-decoration: underline;
     }
 
+    /* 保存按钮样式 */
+    .save-btn {
+        background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%) !important;
+        border: none !important;
+        border-radius: 14px !important;
+        font-size: 1.1em !important;
+        font-weight: 600 !important;
+        padding: 14px 0 !important;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        box-shadow: 0 4px 15px rgba(255, 152, 0, 0.3) !important;
+    }
+    .save-btn:hover {
+        transform: translateY(-2px) !important;
+        box-shadow: 0 8px 25px rgba(255, 152, 0, 0.4) !important;
+    }
+    .save-btn:active {
+        transform: translateY(0) !important;
+    }
+
+    /* 快速保存按钮样式 */
+    .quick-save-btn {
+        background: linear-gradient(135deg, #66bb6a 0%, #43a047 100%) !important;
+        border: none !important;
+        border-radius: 14px !important;
+        font-size: 1.15em !important;
+        font-weight: 600 !important;
+        padding: 16px 0 !important;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        box-shadow: 0 6px 20px rgba(67, 160, 71, 0.3) !important;
+        letter-spacing: 0.03em;
+    }
+    .quick-save-btn:hover {
+        transform: translateY(-2px) !important;
+        box-shadow: 0 10px 30px rgba(67, 160, 71, 0.4) !important;
+    }
+    .quick-save-btn:active {
+        transform: translateY(0) !important;
+    }
+
+    /* 保存卡片样式 */
+    .save-card {
+        border-top: 4px solid #ff9800 !important;
+    }
+    .save-card h3 {
+        color: #e65100 !important;
+    }
+
     /* 响应式设计 */
     @media (max-width: 768px) {
         .main-container {
@@ -633,7 +821,7 @@ def build_ui():
                 ''')
                 model_dropdown = gr.Dropdown(
                     choices=FINETUNED_CHOICES,
-                    value="CLIP微调模型",
+                    value="CLIP微调模型 (推荐)",
                     show_label=False,
                     info="推荐使用 CLIP微调模型（精度最高）",
                     elem_classes=["gradio-dropdown"]
@@ -667,6 +855,64 @@ def build_ui():
                     details_text = gr.HTML()
                     cycle_text = gr.HTML()
 
+                    # 一键保存按钮（识别后直接保存）
+                    gr.HTML('''
+                    <div style="margin-top: 16px; padding: 16px; background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%); border-radius: 12px; border-left: 4px solid #43a047;">
+                        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                            <span style="font-size: 1.2em;">⚡</span>
+                            <span style="font-weight: 600; color: #2e7d32;">快速保存</span>
+                        </div>
+                        <p style="color: #546e7a; margin: 0; font-size: 0.9em;">
+                            如果识别结果正确，点击下方按钮直接保存图片用于训练
+                        </p>
+                    </div>
+                    ''')
+                    quick_save_btn = gr.Button(
+                        "⚡ 一键保存（使用识别结果）",
+                        variant="primary",
+                        size="lg",
+                        elem_classes=["quick-save-btn"]
+                    )
+                    quick_save_status = gr.HTML("")
+
+                # 保存图片区域（手动选择）
+                gr.HTML('''
+                <div class="card save-card fade-in" style="margin-top: 20px; border-top: 4px solid #ff9800;">
+                    <h3 style="color: #e65100; margin-top: 0; font-size: 1.2em; font-weight: 600; display: flex; align-items: center; gap: 10px;">
+                        💾 保存图片用于训练
+                    </h3>
+                    <p style="color: #6c757d; margin: 0; font-size: 0.95em;">
+                        如果识别结果正确，可以保存图片用于后续模型微调
+                    </p>
+                </div>
+                ''')
+                with gr.Group():
+                    with gr.Row():
+                        crop_type_dropdown = gr.Dropdown(
+                            choices=CROP_TYPES,
+                            label="作物类型",
+                            info="选择或确认作物类型",
+                            elem_classes=["gradio-dropdown"]
+                        )
+                        growth_stage_dropdown = gr.Dropdown(
+                            choices=[],
+                            label="生长阶段",
+                            info="选择或确认生长阶段",
+                            elem_classes=["gradio-dropdown"]
+                        )
+                    user_note_input = gr.Textbox(
+                        label="备注（可选）",
+                        placeholder="例如：拍摄地点、天气条件等",
+                        lines=2
+                    )
+                    save_btn = gr.Button(
+                        "💾 保存图片",
+                        variant="secondary",
+                        size="lg",
+                        elem_classes=["save-btn"]
+                    )
+                    save_status = gr.HTML("")
+
         # 底部：支持的作物信息
         with gr.Accordion("🌾 支持识别的作物与生长阶段", open=False, elem_classes=["crop-accordion"]):
             gr.HTML('<div style="padding: 10px 0;">')
@@ -692,16 +938,11 @@ def build_ui():
             global classifier, current_model_key
 
             if image is None:
-                return '<div style="text-align:center; padding:40px; color:#78909c; font-size:1.1em;">📷 请先上传一张农作物图片</div>', "", ""
+                empty_dropdown = gr.Dropdown(choices=[], value=None)
+                return '<div style="text-align:center; padding:40px; color:#78909c; font-size:1.1em;">📷 请先上传一张农作物图片</div>', "", "", "", empty_dropdown
 
             try:
-                if model_label == "EfficientNet微调模型":
-                    model_path = "saved_models/best.pth"
-                    if not os.path.isfile(model_path):
-                        return '<div style="text-align:center; padding:30px; color:#e53935;">❌ EfficientNet微调模型不存在</div>', "", ""
-                    if current_model_key != "efficientnet_finetuned":
-                        load_finetuned(model_path)
-                elif model_label == "CLIP微调模型":
+                if model_label == "CLIP微调模型 (推荐)":
                     # 尝试多个可能的路径
                     model_paths = [
                         "saved_models/clip/clip-vit-large-patch14-336-v2/best.pth",
@@ -715,7 +956,8 @@ def build_ui():
                             model_path = p
                             break
                     if model_path is None:
-                        return '<div style="text-align:center; padding:30px; color:#e53935;">❌ CLIP微调模型不存在，请先运行训练</div>', "", ""
+                        empty_dropdown = gr.Dropdown(choices=[], value=None)
+                        return '<div style="text-align:center; padding:30px; color:#e53935;">❌ CLIP微调模型不存在，请先运行训练</div>', "", "", "", empty_dropdown
                     if current_model_key != "clip_finetuned":
                         load_finetuned_clip(model_path)
                 else:
@@ -723,17 +965,72 @@ def build_ui():
                     if current_model_key != model_key:
                         load_model(model_key)
 
-                return recognize_crop(image, model_label)
+                result_text, details_text, cycle_text, recommended_crop, recommended_stage = recognize_crop(image, model_label)
+
+                # 根据推荐的作物类型，更新生长阶段的选项列表
+                if recommended_crop and recommended_crop in GROWTH_STAGES:
+                    stage_dropdown = gr.Dropdown(
+                        choices=GROWTH_STAGES[recommended_crop],
+                        value=recommended_stage if recommended_stage else None
+                    )
+                else:
+                    stage_dropdown = gr.Dropdown(choices=[], value=None)
+
+                return result_text, details_text, cycle_text, recommended_crop, stage_dropdown
             except Exception as e:
                 import traceback
                 error_msg = traceback.format_exc()
                 print(f"识别错误: {error_msg}")
-                return f'<div style="text-align:center; padding:30px; color:#e53935;">❌ 识别出错: {str(e)}</div>', "", ""
+                empty_dropdown = gr.Dropdown(choices=[], value=None)
+                return f'<div style="text-align:center; padding:30px; color:#e53935;">❌ 识别出错: {str(e)}</div>', "", "", "", empty_dropdown
+
+        def update_growth_stages(crop_type, current_stage=None):
+            """根据作物类型更新生长阶段选项"""
+            if crop_type and crop_type in GROWTH_STAGES:
+                choices = GROWTH_STAGES[crop_type]
+                # 如果当前值在新的选项中，保留它
+                if current_stage and current_stage in choices:
+                    return gr.Dropdown(choices=choices, value=current_stage)
+                return gr.Dropdown(choices=choices, value=None)
+            return gr.Dropdown(choices=[], value=None)
+
+        def save_image_with_feedback(image, crop_type, growth_stage, user_note):
+            """保存图片并返回状态"""
+            if not crop_type or not growth_stage:
+                return "❌ 请先选择作物类型和生长阶段"
+            return save_uploaded_image(image, crop_type, growth_stage, user_note)
 
         submit_btn.click(
             fn=recognize_with_finetuned,
             inputs=[image_input, model_dropdown],
-            outputs=[result_text, details_text, cycle_text]
+            outputs=[result_text, details_text, cycle_text, crop_type_dropdown, growth_stage_dropdown]
+        )
+
+        # 作物类型变化时更新生长阶段选项
+        crop_type_dropdown.change(
+            fn=update_growth_stages,
+            inputs=[crop_type_dropdown, growth_stage_dropdown],
+            outputs=[growth_stage_dropdown]
+        )
+
+        # 一键保存按钮事件（使用识别结果）
+        def quick_save_with_recognition(image, recommended_crop, recommended_stage):
+            """一键保存图片（使用识别结果）"""
+            if not recommended_crop or not recommended_stage:
+                return "❌ 请先进行识别"
+            return quick_save_image(image, recommended_crop, recommended_stage, "一键保存（识别结果）")
+
+        quick_save_btn.click(
+            fn=quick_save_with_recognition,
+            inputs=[image_input, crop_type_dropdown, growth_stage_dropdown],
+            outputs=[quick_save_status]
+        )
+
+        # 保存按钮事件（手动选择）
+        save_btn.click(
+            fn=save_image_with_feedback,
+            inputs=[image_input, crop_type_dropdown, growth_stage_dropdown, user_note_input],
+            outputs=[save_status]
         )
 
     return demo
