@@ -1,41 +1,12 @@
 # 农作物生长阶段识别系统 (Crop Growth Stage Recognition)
 
-基于 CLIP + LoRA 的农作物生长阶段智能识别系统，支持棉花、玉米、小麦三种作物的生长阶段分类。
+基于 CLIP + LoRA 的农作物生长阶段智能识别系统，支持棉花、玉米、小麦三种作物共15个生长阶段的分类。
 
 ## 项目简介
 
-本系统利用 CLIP (Contrastive Language-Image Pre-Training) 视觉语言模型，结合 LoRA (Low-Rank Adaptation) 微调技术，实现对农作物生长阶段的高精度识别。通过 Gradio 提供友好的 Web 界面，支持图片上传和实时预测。
+本系统利用 CLIP (Contrastive Language-Image Pre-Training) 视觉语言模型，结合 LoRA (Low-Rank Adaptation) 微调技术，实现对农作物生长阶段的高精度识别。通过 Gradio 提供友好的 Web 界面，支持图片上传、实时预测和一键保存训练数据。
 
-## 模型精度
-
-### 最终测试结果
-
-| 模型 | 测试集准确率 | 验证集准确率 |
-|------|-------------|-------------|
-| CLIP ViT-L/14@336 + LoRA (原版) | 91.30% | 87.36% |
-| CLIP ViT-L/14@336 + LoRA V2 (优化版) | 92.75% | 92.72% |
-| **4 模型集成** | **95.65%** | - |
-
-### 逐类准确率（4 模型集成）
-
-| 类别 | 准确率 |
-|------|--------|
-| cotton_boll_opening (吐絮期) | 100.00% |
-| cotton_seedling (苗期) | 100.00% |
-| cotton_squaring (蕾期) | 96.43% |
-| cotton_flowering (开花期) | 93.33% |
-| cotton_boll_setting (结铃期) | 89.66% |
-
-### 模型对比
-
-| 模型 | 参数量 | 可训练参数 | 特点 |
-|------|--------|-----------|------|
-| CLIP ViT-B/32 + LoRA | 153M | 265K | 轻量级，推理速度快 |
-| CLIP ViT-L/14 + LoRA | 432M | 396K | 平衡性能和速度 |
-| CLIP ViT-L/14@336 + LoRA | 433M | 396K | 高分辨率，精度最高 |
-| CLIP ViT-L/14@336 + LoRA V2 | 438M | 1.3M | 优化版，更强的正则化 |
-
-## 支持的作物和生长阶段
+## 🌾 支持的作物和生长阶段
 
 ### 棉花 (Cotton) - 5 个阶段
 - **苗期 (Seedling)**: 出苗至现蕾前
@@ -44,70 +15,72 @@
 - **结铃期 (Boll Setting)**: 结铃至吐絮
 - **吐絮期 (Boll Opening)**: 吐絮至收获
 
-### 玉米 (Corn) - 5 个阶段 [待数据收集]
-- 出苗期、拔节期、抽穗期、灌浆期、成熟期
+### 玉米 (Corn) - 5 个阶段
+- **出苗期 (Seedling)**: 出苗至三叶期
+- **拔节期 (Jointing)**: 拔节至抽穗
+- **抽穗期 (Tasseling)**: 抽穗至灌浆
+- **灌浆期 (Filling)**: 灌浆至成熟
+- **成熟期 (Maturity)**: 成熟至收获
 
-### 小麦 (Wheat) - 5 个阶段 [待数据收集]
-- 出苗期、分蘖期、拔节期、抽穗期、成熟期
+### 小麦 (Wheat) - 5 个阶段
+- **出苗期 (Seedling)**: 出苗至分蘖
+- **分蘖期 (Tillering)**: 分蘖至拔节
+- **拔节期 (Jointing)**: 拔节至抽穗
+- **抽穗期 (Heading)**: 抽穗至成熟
+- **成熟期 (Maturity)**: 成熟至收获
 
-## 项目结构
+## 📊 模型精度
 
-```
-crop_recognition/
-├── app.py                          # Gradio Web 应用
-├── requirements.txt                # Python 依赖
-├── README.md                       # 项目说明
-├── .gitignore                      # Git 忽略规则
-├── dataset/                        # 数据集 (需单独下载)
-│   ├── train/                      # 训练集 (70%)
-│   ├── val/                        # 验证集 (20%)
-│   └── test/                       # 测试集 (10%)
-├── models/                         # 模型定义
-│   ├── classifier.py               # EfficientNet-B0 分类器
-│   ├── clip_classifier.py          # CLIP 零样本分类器
-│   └── growth_stages.py            # 作物生长阶段知识库
-├── scripts/                        # 训练和评估脚本
-│   ├── train.py                    # EfficientNet 训练脚本
-│   ├── train_clip.py               # CLIP LoRA 训练脚本 (V1)
-│   ├── train_clip_v2.py            # CLIP LoRA 训练脚本 (V2, 优化版)
-│   ├── evaluate.py                 # 模型评估脚本
-│   ├── evaluate_all_models.py      # 全模型基准测试
-│   ├── ensemble_predict.py         # 模型集成评估
-│   ├── predict.py                  # 单图预测
-│   ├── predict_clip.py             # CLIP 单图预测
-│   └── download_dataset.py         # 数据集构建工具
-├── utils/                          # 工具模块
-│   ├── augmentation.py             # 数据增强
-│   └── dataset.py                  # 数据加载器
-└── saved_models/                   # 保存的模型 (需单独下载)
-    ├── clip/
-    │   ├── clip-base/              # CLIP ViT-B/32 LoRA
-    │   ├── clip-large/             # CLIP ViT-L/14 LoRA
-    │   ├── clip-large-336/         # CLIP ViT-L/14@336 LoRA
-    │   ├── clip-vit-large-patch14-336-v2/  # CLIP V2 优化版
-    │   ├── eval_results.json       # 零样本评估结果
-    │   ├── model_ranking.json      # 模型排名
-    │   └── ensemble_results.json   # 集成评估结果
-    └── training_curves.png         # 训练曲线
-```
+### 当前最佳模型
 
-## 快速开始
+| 模型 | 测试集准确率 | 说明 |
+|------|-------------|------|
+| CLIP ViT-L/14@336 + LoRA | **84.73%** | 15类全量任务最佳 |
+| 棉花5类集成 | 95.65% | 仅棉花5类 |
+
+### 逐类准确率
+
+| 类别 | 准确率 | 备注 |
+|------|--------|------|
+| corn_maturity | 100% | |
+| corn_seedling | 90% | |
+| corn_tasseling | 100% | |
+| corn_filling | 33.33% | ⚠️ 待提升 |
+| corn_jointing | 33.33% | ⚠️ 待提升 |
+| wheat_maturity | 100% | |
+| wheat_seedling | 100% | |
+| wheat_heading | 83.33% | |
+| wheat_tillering | 66.67% | |
+| wheat_jointing | 50% | ⚠️ 待提升 |
+| cotton_seedling | 95.45% | |
+| cotton_squaring | 89.29% | |
+| cotton_flowering | 66.67% | |
+| cotton_boll_setting | 72.41% | |
+| cotton_boll_opening | 100% | |
+
+## 🚀 快速开始
 
 ### 环境要求
 
+**最低配置（CPU可用）**:
+- Python 3.8+
+- 内存 8GB+
+- 硬盘 20GB+
+
+**推荐配置（GPU加速）**:
 - Python 3.8+
 - PyTorch 2.0+
-- CUDA 11.8+ (推荐使用 GPU)
-- 8GB+ GPU 显存
+- CUDA 11.8+
+- GPU 显存 8GB+（如 RTX 3060/4060）
 
 ### 安装
 
 ```bash
 # 克隆项目
-git clone https://github.com/your-username/crop_recognition.git
+git clone https://github.com/Vicitior/crop_recognition.git
 cd crop_recognition
 
-# 创建虚拟环境
+# 创建虚拟环境（推荐）
 python -m venv venv
 source venv/bin/activate  # Linux/Mac
 # 或
@@ -117,157 +90,209 @@ venv\Scripts\activate  # Windows
 pip install -r requirements.txt
 ```
 
-### 下载预训练模型
+### 准备数据集和模型
 
-由于模型文件较大（约 11GB），需要单独下载：
+由于模型和数据集文件较大，需要单独准备：
 
 ```bash
-# 创建模型目录
-mkdir -p saved_models/clip
+# 1. 创建目录
+mkdir -p saved_models/clip/clip-vit-large-patch14-336-v2
+mkdir -p dataset/{train,val,test,user_feedback}
 
-# 下载模型文件 (请从 Releases 页面下载)
-# 或使用以下命令训练自己的模型
+# 2. 从本地复制模型文件
+# 将 best.pth 和 config.json 复制到 saved_models/clip/clip-vit-large-patch14-336-v2/
+
+# 3. 从本地复制数据集
+# 将 train/val/test 目录复制到 dataset/
 ```
 
-### 准备数据集
+### 启动 Web 界面
 
 ```bash
-# 查看数据集收集指南
-python scripts/download_dataset.py --guide
-
-# 创建类别目录
-python scripts/download_dataset.py --create-dirs dataset/raw
-
-# 将收集的图片放入 dataset/raw/ 对应目录
-# 然后自动划分 train/val/test
-python scripts/download_dataset.py --split
-```
-
-## 使用方法
-
-### Web 界面
-
-```bash
+# CPU 模式（无需GPU）
 python app.py
+
+# 指定端口
+python app.py --port 7860
+
+# 创建公网链接（可选）
+python app.py --share
 ```
 
-启动后访问 `http://localhost:7860` 即可使用 Web 界面上传图片进行预测。
+启动后访问 `http://localhost:7860` 即可使用。
 
-### 命令行预测
+## 📸 功能特性
+
+### 1. 图片识别
+- 上传农作物图片
+- 自动识别作物类型和生长阶段
+- 显示置信度和详细信息
+
+### 2. 一键保存
+- 识别后直接保存图片到训练集
+- 自动按类别归类
+- 支持添加备注信息
+
+### 3. 增量训练
+- 在现有模型基础上继续训练
+- 自动合并新数据和原始数据
+- 使用小学习率避免遗忘
 
 ```bash
-# 使用 CLIP 零样本预测
-python scripts/predict.py --image path/to/image.jpg
-
-# 使用 fine-tuned CLIP 预测
-python scripts/predict_clip.py --image path/to/image.jpg --model-dir saved_models/clip/clip-large-336
+# 增量训练命令
+python scripts/incremental_train.py --epochs 10 --lr 1e-5
 ```
 
-### 训练模型
+## 🖥️ 服务器部署
+
+### 方案1: 本地部署（推荐个人使用）
 
 ```bash
-# 训练 CLIP V1 (原版)
-python scripts/train_clip.py --model openai/clip-vit-large-patch14-336 --method lora --epochs 20
-
-# 训练 CLIP V2 (优化版, 推荐)
-python scripts/train_clip_v2.py --model openai/clip-vit-large-patch14-336
-
-# 评估模型
-python scripts/evaluate.py --model-path saved_models/clip/clip-large-336/best.pth
-
-# 集成评估
-python scripts/ensemble_predict.py
+# 直接启动
+python app.py --port 7860
 ```
 
-## 技术细节
-
-### V2 优化改进
-
-相比 V1 版本，V2 训练脚本包含以下改进：
-
-| 改进项 | V1 | V2 |
-|--------|----|----|
-| LoRA rank | 8 | 16 |
-| 训练轮数 | 15 | 50 |
-| 分类头 | 单层 | 两层 + BatchNorm |
-| 数据增强 | 基础 | Mixup + RandomErasing + Affine |
-| 标签平滑 | 无 | 0.1 |
-| 学习率调度 | Cosine | Warmup + Cosine |
-| Early Stopping | 无 | 10 轮耐心 |
-| 梯度裁剪 | 无 | max_norm=1.0 |
-
-### 模型架构
-
-```
-CLIP ViT-L/14@336 (冻结) + LoRA 适配器
-    ↓
-Image Features (768-dim)
-    ↓
-Linear(768, 1024) → BatchNorm → ReLU → Dropout(0.3)
-    ↓
-Linear(1024, 512) → BatchNorm → ReLU → Dropout(0.2)
-    ↓
-Linear(512, 5)
-    ↓
-预测类别
-```
-
-### 集成策略
-
-系统采用 4 个模型的简单平均集成：
-- CLIP ViT-B/32 + LoRA (V1)
-- CLIP ViT-L/14 + LoRA (V1)
-- CLIP ViT-L/14@336 + LoRA (V1)
-- CLIP ViT-L/14@336 + LoRA V2
-
-每个模型使用对应分辨率的图片进行预测，最后对 softmax 概率取平均。
-
-## 数据集来源
-
-- **棉花数据集**: 自行采集和标注，包含 1,323 张棉花不同生长阶段的图片
-- **玉米/小麦**: 待收集 (参见 `scripts/download_dataset.py` 中的收集指南)
-
-## 精度提升方案
-
-本项目实现了5种最新的精度提升方法，详见 [ACCURACY_IMPROVEMENT_GUIDE.md](ACCURACY_IMPROVEMENT_GUIDE.md)。
-
-### 测试时增强 (TTA) - 已验证有效
-
-| 指标 | 无TTA | 有TTA | 提升 |
-|------|-------|-------|------|
-| **总体准确率** | 92.75% | 94.93% | **+2.17%** |
-| cotton_boll_setting | 79.31% | 89.66% | **+10.34%** |
+### 方案2: 云服务器部署
 
 ```bash
-# 使用TTA预测
-python scripts/predict_tta.py --image test.jpg --tta-level medium
+# 1. 克隆代码
+git clone https://github.com/Vicitior/crop_recognition.git
+cd crop_recognition
+
+# 2. 上传模型和数据集
+scp -r user@local:/path/to/saved_models/ ./
+scp -r user@local:/path/to/dataset/ ./
+
+# 3. 安装依赖
+pip install -r requirements.txt
+
+# 4. 启动服务
+python app.py --port 7860 --share
 ```
 
-### 其他方案
+### 方案3: Docker 部署（可选）
 
-| 方案 | 脚本 | 预期提升 |
-|------|------|---------|
-| 类别级数据增强 | `train_with_class_augmentation.py` | +1-3% |
-| 提示学习 (CoOp/MaPLe) | `train_prompt_learning.py` | +2-4% |
-| MMD-LoRA多模态融合 | `train_mmd_lora.py` | +2-5% |
-| 注意力机制增强 | `train_with_attention.py` | +1-2% |
-
-## 引用
-
-如果您使用了本项目，请引用：
-
-```bibtex
-@misc{crop_recognition,
-  title={Crop Growth Stage Recognition using CLIP and LoRA},
-  year={2026},
-  howpublished={\url{https://github.com/your-username/crop_recognition}}
-}
+```dockerfile
+FROM python:3.10-slim
+WORKDIR /app
+COPY . .
+RUN pip install -r requirements.txt
+CMD ["python", "app.py", "--port", "7860"]
 ```
 
-## 许可证
+## 📈 训练模型
+
+### 从头训练
+
+```bash
+# 使用推荐配置
+python scripts/train_clip_v2.py \
+    --model openai/clip-vit-large-patch14-336 \
+    --lora-rank 16 \
+    --epochs 50 \
+    --lr 5e-4
+```
+
+### 增量训练（推荐）
+
+```bash
+# 在现有模型基础上继续训练
+python scripts/incremental_train.py \
+    --model-path saved_models/clip/clip-vit-large-patch14-336-v2/best.pth \
+    --epochs 10 \
+    --lr 1e-5
+```
+
+### 使用 Focal Loss（处理类别不平衡）
+
+```bash
+python scripts/train_clip_v2.py \
+    --model openai/clip-vit-large-patch14-336 \
+    --use-focal-loss \
+    --focal-gamma 2.0
+```
+
+## 💻 CPU vs GPU
+
+| 功能 | CPU | GPU |
+|------|-----|-----|
+| 图片识别 | 2-5秒/张 | 0.1-0.5秒/张 |
+| 增量训练 | 2-4小时 | 15-30分钟 |
+| 从头训练 | 不推荐 | 2-3小时 |
+
+**结论**: 
+- **推理（识别图片）**: CPU完全可用，只是稍慢
+- **训练**: 强烈推荐GPU，CPU训练太慢
+
+## 📁 项目结构
+
+```
+crop_recognition/
+├── app.py                          # Gradio Web 应用
+├── requirements.txt                # Python 依赖
+├── README.md                       # 项目说明
+├── .gitignore                      # Git 忽略规则
+├── dataset/                        # 数据集
+│   ├── train/                      # 训练集
+│   ├── val/                        # 验证集
+│   ├── test/                       # 测试集
+│   └── user_feedback/              # 用户反馈数据
+├── models/                         # 模型定义
+│   ├── clip_classifier.py          # CLIP 零样本分类器
+│   ├── classifier.py               # EfficientNet 分类器
+│   └── growth_stages.py            # 作物生长阶段知识库
+├── scripts/                        # 训练和评估脚本
+│   ├── train_clip_v2.py            # 主训练脚本
+│   ├── incremental_train.py        # 增量训练脚本
+│   ├── ensemble_predict.py         # 模型集成评估
+│   ├── prepare_deployment.py       # 部署准备脚本
+│   └── ...
+└── saved_models/                   # 保存的模型
+    └── clip/
+        └── clip-vit-large-patch14-336-v2/
+            ├── best.pth            # 最佳模型权重
+            └── config.json         # 模型配置
+```
+
+## 🔧 常见问题
+
+### Q: 没有GPU能用吗？
+**A**: 可以！CPU完全可以运行推理（识别图片），只是速度稍慢（2-5秒/张）。训练建议用GPU。
+
+### Q: 如何添加新的作物类别？
+**A**: 
+1. 在 `dataset/user_feedback/` 下创建新类别目录
+2. 上传该类别的图片
+3. 运行增量训练
+
+### Q: 模型文件在哪里？
+**A**: 模型文件太大（1.7GB），不在GitHub上。需要从本地复制到服务器的 `saved_models/` 目录。
+
+### Q: 如何提升准确率？
+**A**: 
+1. 收集更多该类别的图片
+2. 运行增量训练
+3. 使用 Focal Loss 处理类别不平衡
+
+## 📝 更新日志
+
+### 2026-06-08
+- 新增增量训练功能
+- 优化零样本提示词（添加对比描述）
+- 添加 Focal Loss 支持
+- 优化课程学习调度
+- 创建部署准备脚本
+
+### 2026-05-27
+- 完成15类全量任务训练
+- 基线准确率达到84.73%
+
+## 📄 许可证
 
 本项目仅供学习和研究使用。
 
-## 联系方式
+## 📧 联系方式
+
+GitHub: https://github.com/Vicitior/crop_recognition
 
 如有问题或建议，请提交 Issue 或 Pull Request。
