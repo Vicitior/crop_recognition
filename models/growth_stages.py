@@ -119,6 +119,28 @@ for crop_en, crop_data in CROP_INFO.items():
 
 NUM_CLASSES = len(CLASS_MAP)
 
+# ============================================================
+# 序数索引映射：全局类别索引 → 作物内阶段序号
+# 用于 Ordinal Loss 计算高斯软标签
+# ============================================================
+CROP_STAGE_ORDINAL = {}
+for crop_en, crop_data in CROP_INFO.items():
+    for stage_idx, stage_en in enumerate(crop_data["stages"]):
+        class_name = f"{crop_en}_{stage_en}"
+        global_idx = CLASS_MAP[class_name]["index"]
+        CROP_STAGE_ORDINAL[global_idx] = stage_idx
+
+# 每种作物的阶段数
+CROP_NUM_STAGES = {crop: len(data["stages"]) for crop, data in CROP_INFO.items()}
+
+def get_ordinal_label(global_idx):
+    """全局类别索引 → 该作物内的阶段序号 (0-based)"""
+    return CROP_STAGE_ORDINAL.get(global_idx, global_idx)
+
+def get_num_stages_for_crop(crop_en):
+    """获取某种作物的生长阶段数"""
+    return CROP_NUM_STAGES.get(crop_en, 5)
+
 def get_class_names():
     """返回所有类别名称列表，按索引排序"""
     return [k for k, v in sorted(CLASS_MAP.items(), key=lambda x: x[1]["index"])]

@@ -33,11 +33,13 @@ from datetime import datetime
 
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 import torch.optim as optim
-from torch.utils.data import DataLoader, Dataset
+from torch.utils.data import DataLoader, Dataset, WeightedRandomSampler
 from torchvision import transforms
 from PIL import Image
 import numpy as np
+from collections import defaultdict
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
@@ -64,6 +66,37 @@ def mixup_data(x, y, alpha=0.4):
 def mixup_criterion(criterion, pred, y_a, y_b, lam):
     """Mixup损失计算"""
     return lam * criterion(pred, y_a) + (1 - lam) * criterion(pred, y_b)
+
+
+# ============================================================
+# Focal Loss
+# ============================================================
+
+class FocalLoss(nn.Module):
+    """Focal Loss - 处理类别不平衡问题
+
+    通过降低易分类样本的权重，让模型专注于难分类样本
+    """
+    def __init__(self, alpha=None, gamma=2.0, reduction='mean'):
+        super().__init__()
+        self.alpha = alpha  # 类别权重
+        self.gamma = gamma  # 聚焦参数，越大越关注难样本
+        self.reduction = reduction
+
+    def forward(self, inputs, targets):
+        ce_loss = F.cross_entropy(inputs, targets, reduction='none')
+        pt = torch.exp(-ce_loss)
+        focal_loss = ((1 - pt) ** self.gamma) * ce_loss
+
+        if self.alpha is not None:
+            alpha_t = self.alpha[targets]
+            focal_loss = alpha_t * focal_loss
+
+        if self.reduction == 'mean':
+            return focal_loss.mean()
+        elif self.reduction == 'sum':
+            return focal_loss.sum()
+        return focal_loss
 
 
 # ============================================================
@@ -285,6 +318,8 @@ def evaluate(model, dataloader, criterion, device):
     total_loss = 0
     correct = 0
     total = 0
+    class_correct = defaultdict(int)
+    class_total = defaultdict(int)
 
     for images, labels in dataloader:
         images = images.to(device)
@@ -298,7 +333,17 @@ def evaluate(model, dataloader, criterion, device):
         total += labels.size(0)
         correct += predicted.eq(labels).sum().item()
 
-    return total_loss / len(dataloader), 100. * correct / total
+        for pred, label in zip(predicted, labels):
+            class_total[label.item()] += 1
+            if pred.item() == label.item():
+                class_correct[label.item()] += 1
+
+    class_accuracies = {
+        idx: 100.0 * class_correct[idx] / class_total[idx]
+        for idx in class_total
+    }
+
+    return total_loss / len(dataloader), 100. * correct / total, class_accuracies
 
 
 def main():
@@ -318,6 +363,8 @@ def main():
     parser.add_argument("--label-smoothing", type=float, default=0.1, help="标签平滑系数")
     parser.add_argument("--mixup-alpha", type=float, default=0.4, help="Mixup alpha (0=禁用)")
     parser.add_argument("--random-erasing", type=float, default=0.2, help="RandomErasing概率 (0=禁用)")
+    parser.add_argument("--use-focal-loss", action="store_true", help="使用Focal Loss替代CrossEntropyLoss")
+    parser.add_argument("--focal-gamma", type=float, default=2.0, help="Focal Loss的gamma参数")
     parser.add_argument("--output-dir", default=None, help="输出目录 (默认自动命名)")
     parser.add_argument("--resume", default=None, help="从checkpoint恢复训练")
     parser.add_argument("--device", default="auto", help="设备")
@@ -382,16 +429,38 @@ def main():
     val_dataset = CropStageDataset(args.data_dir, val_transform, "val")
     test_dataset = CropStageDataset(args.data_dir, val_transform, "test")
 
+    num_classes = train_dataset.num_classes
+    class_names = list(train_dataset.class_to_idx.keys())
+    print(f"类别数: {num_classes}, 类别: {class_names}")
+
+    # 统计类别分布，计算逆频率权重
+    class_sample_counts = [0] * num_classes
+    for _, label in train_dataset.samples:
+        class_sample_counts[label] += 1
+    print(f"各类别样本数: {dict(zip(class_names, class_sample_counts))}")
+
+    # 逆频率权重：样本越少权重越大
+    total_samples = sum(class_sample_counts)
+    class_weights = []
+    for c in class_sample_counts:
+        if c > 0:
+            class_weights.append(total_samples / (num_classes * c))
+        else:
+            class_weights.append(0.0)
+    class_weights_tensor = torch.FloatTensor(class_weights).to(device)
+    print(f"类别权重: {dict(zip(class_names, [f'{w:.2f}' for w in class_weights]))}")
+
+    # WeightedRandomSampler：让少数类在每个epoch中被采样更多次
+    sample_weights = [class_weights[label] for _, label in train_dataset.samples]
+    sampler = WeightedRandomSampler(sample_weights, num_samples=len(sample_weights), replacement=True)
+
     train_loader = DataLoader(train_dataset, batch_size=args.batch_size,
-                              shuffle=True, num_workers=0, pin_memory=True)
+                              sampler=sampler, num_workers=0, pin_memory=True,
+                              drop_last=True)
     val_loader = DataLoader(val_dataset, batch_size=args.batch_size,
                             shuffle=False, num_workers=0, pin_memory=True)
     test_loader = DataLoader(test_dataset, batch_size=args.batch_size,
                              shuffle=False, num_workers=0, pin_memory=True)
-
-    num_classes = train_dataset.num_classes
-    class_names = list(train_dataset.class_to_idx.keys())
-    print(f"类别数: {num_classes}, 类别: {class_names}")
 
     # 构建模型
     if args.method == "lora":
@@ -408,7 +477,7 @@ def main():
     # 恢复训练
     start_epoch = 0
     best_val_acc = 0
-    history = {"train_loss": [], "train_acc": [], "val_loss": [], "val_acc": [], "lr": []}
+    history = {"train_loss": [], "train_acc": [], "val_loss": [], "val_acc": [], "val_class_acc": [], "lr": []}
 
     if args.resume:
         print(f"从checkpoint恢复: {args.resume}")
@@ -419,9 +488,18 @@ def main():
         if "history" in checkpoint:
             history = checkpoint["history"]
         print(f"从第 {start_epoch} 轮继续, 当前最佳验证准确率: {best_val_acc:.2f}%")
+        # optimizer状态会在optimizer创建后恢复
+        resume_optimizer_state = checkpoint.get("optimizer_state_dict", None)
+    else:
+        resume_optimizer_state = None
 
-    # 损失函数（带标签平滑）
-    criterion = nn.CrossEntropyLoss(label_smoothing=args.label_smoothing)
+    # 损失函数
+    if args.use_focal_loss:
+        criterion = FocalLoss(alpha=class_weights_tensor, gamma=args.focal_gamma)
+        print(f"使用 Focal Loss (gamma={args.focal_gamma})")
+    else:
+        criterion = nn.CrossEntropyLoss(weight=class_weights_tensor, label_smoothing=args.label_smoothing)
+        print(f"使用 CrossEntropyLoss (label_smoothing={args.label_smoothing})")
 
     # 优化器
     if args.method == "linear":
@@ -435,6 +513,14 @@ def main():
 
     # 学习率调度器
     scheduler = WarmupCosineScheduler(optimizer, args.warmup_epochs, args.epochs)
+
+    # 恢复optimizer状态（断点续训）
+    if resume_optimizer_state is not None:
+        try:
+            optimizer.load_state_dict(resume_optimizer_state)
+            print(f"  >> 已恢复optimizer状态")
+        except Exception as e:
+            print(f"  >> 恢复optimizer状态失败: {e}，使用新optimizer")
 
     # 训练
     patience_counter = 0
@@ -454,7 +540,9 @@ def main():
 
         train_loss, train_acc = train_epoch(model, train_loader, criterion,
                                             optimizer, device, args.mixup_alpha)
-        val_loss, val_acc = evaluate(model, val_loader, criterion, device)
+        val_loss, val_acc, class_accs = evaluate(model, val_loader, criterion, device)
+        idx_to_class = train_dataset.idx_to_class
+        class_acc_names = {idx_to_class[idx]: acc for idx, acc in class_accs.items()}
 
         elapsed = time.time() - start_time
 
@@ -462,12 +550,19 @@ def main():
         history["train_acc"].append(train_acc)
         history["val_loss"].append(val_loss)
         history["val_acc"].append(val_acc)
+        history["val_class_acc"].append(class_acc_names)
         history["lr"].append(current_lr)
 
         print(f"Epoch [{epoch+1}/{args.epochs}] "
               f"Train Loss: {train_loss:.4f} Acc: {train_acc:.2f}% | "
               f"Val Loss: {val_loss:.4f} Acc: {val_acc:.2f}% | "
               f"LR: {current_lr:.2e} | Time: {elapsed:.1f}s")
+
+        # 打印逐类准确率（关注少数类）
+        minority_classes = [c for c, n in zip(class_names, class_sample_counts) if n < 30]
+        if minority_classes:
+            acc_strs = [f"{c}:{class_acc_names.get(c, 0):.1f}%" for c in minority_classes]
+            print(f"  少数类准确率: {', '.join(acc_strs)}")
 
         # 保存最佳模型
         if val_acc > best_val_acc:
@@ -491,7 +586,20 @@ def main():
                 print(f"\n早停! 验证准确率已连续 {args.early_stop} 轮未提升")
                 break
 
-    # 保存最后一轮
+        # 每个epoch都保存checkpoint（断点续训）
+        checkpoint = {
+            "epoch": epoch + 1,
+            "model_state_dict": model.state_dict(),
+            "optimizer_state_dict": optimizer.state_dict(),
+            "best_val_acc": best_val_acc,
+            "class_names": class_names,
+            "method": args.method,
+            "model_name": args.model,
+            "history": history
+        }
+        torch.save(checkpoint, output_dir / "last.pth")
+
+    # 保存最后一轮（兜底）
     checkpoint = {
         "epoch": epoch + 1,
         "model_state_dict": model.state_dict(),
@@ -509,8 +617,14 @@ def main():
     best_checkpoint = torch.load(output_dir / "best.pth", map_location=device, weights_only=False)
     model.load_state_dict(best_checkpoint["model_state_dict"])
 
-    test_loss, test_acc = evaluate(model, test_loader, criterion, device)
+    test_loss, test_acc, test_class_accs = evaluate(model, test_loader, criterion, device)
     print(f"Test Loss: {test_loss:.4f}, Test Acc: {test_acc:.2f}%")
+
+    # 打印测试集逐类准确率
+    print("\n测试集逐类准确率:")
+    for idx, acc in sorted(test_class_accs.items()):
+        cls_name = idx_to_class[idx]
+        print(f"  {cls_name}: {acc:.2f}%")
 
     # 保存训练曲线
     try:
@@ -565,6 +679,9 @@ def main():
         "class_names": class_names,
         "best_val_acc": best_val_acc,
         "test_acc": test_acc,
+        "test_class_accs": {idx_to_class[idx]: acc for idx, acc in test_class_accs.items()},
+        "class_sample_counts": dict(zip(class_names, class_sample_counts)),
+        "class_weights": dict(zip(class_names, [round(w, 4) for w in class_weights])),
         "trainable_params": trainable_params,
         "total_params": total_params,
         "timestamp": datetime.now().isoformat(),

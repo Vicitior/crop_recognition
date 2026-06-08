@@ -1,27 +1,44 @@
 {
   "individual_accs": {
-    "clip-base": 80.43478260869566,
-    "clip-large": 89.85507246376811,
-    "clip-large-336": 89.85507246376811,
-    "clip-vit-large-patch14-336-v2": 92.7536231884058
+    "clip-vit-large-patch14-336-v2": 76.84729064039409
   },
-  "ensemble_avg_acc": 95.65217391304348,
-  "ensemble_weighted_acc": 95.65217391304348,
-  "best_single_acc": 92.7536231884058,
-  "improvement": 2.898550724637687,
+  "ensemble_avg_acc": 76.84729064039409,
+  "ensemble_weighted_acc": 76.84729064039409,
+  "best_single_acc": 76.84729064039409,
+  "improvement": 0.0,
   "class_accuracies_avg": {
+    "corn_filling": 33.333333333333336,
+    "corn_jointing": 0.0,
+    "corn_maturity": 66.66666666666667,
+    "corn_seedling": 100.0,
+    "corn_tasseling": 100.0,
     "cotton_boll_opening": 100.0,
-    "cotton_boll_setting": 89.65517241379311,
-    "cotton_flowering": 93.33333333333333,
-    "cotton_seedling": 100.0,
-    "cotton_squaring": 96.42857142857143
+    "cotton_boll_setting": 75.86206896551724,
+    "cotton_flowering": 30.0,
+    "cotton_seedling": 95.45454545454545,
+    "cotton_squaring": 85.71428571428571,
+    "wheat_heading": 100.0,
+    "wheat_jointing": 50.0,
+    "wheat_maturity": 87.5,
+    "wheat_seedling": 71.42857142857143,
+    "wheat_tillering": 33.333333333333336
   },
   "class_accuracies_weighted": {
+    "corn_filling": 33.333333333333336,
+    "corn_jointing": 0.0,
+    "corn_maturity": 66.66666666666667,
+    "corn_seedling": 100.0,
+    "corn_tasseling": 100.0,
     "cotton_boll_opening": 100.0,
-    "cotton_boll_setting": 89.65517241379311,
-    "cotton_flowering": 93.33333333333333,
-    "cotton_seedling": 100.0,
-    "cotton_squaring": 96.42857142857143
+    "cotton_boll_setting": 75.86206896551724,
+    "cotton_flowering": 30.0,
+    "cotton_seedling": 95.45454545454545,
+    "cotton_squaring": 85.71428571428571,
+    "wheat_heading": 100.0,
+    "wheat_jointing": 50.0,
+    "wheat_maturity": 87.5,
+    "wheat_seedling": 71.42857142857143,
+    "wheat_tillering": 33.333333333333336
   },
-  "tta": false
+  "tta": true
 }

@@ -85,6 +85,17 @@ def load_model(model_dir, device):
     lora_rank = config.get("lora_rank", 16) or 16
     lora_alpha = config.get("lora_alpha", 32) or 32
 
+    # 从checkpoint检测实际的lora_rank（config可能不准确）
+    checkpoint = torch.load(checkpoint_path, map_location="cpu", weights_only=False)
+    state_dict = checkpoint["model_state_dict"]
+    for key, val in state_dict.items():
+        if "lora_A" in key:
+            actual_rank = val.shape[0]
+            if actual_rank != lora_rank:
+                print(f"  [修正] lora_rank: {lora_rank} -> {actual_rank} (从checkpoint检测)")
+                lora_rank = actual_rank
+            break
+
     # 加载CLIP模型
     from transformers import CLIPModel, AutoModel
 
@@ -106,9 +117,8 @@ def load_model(model_dir, device):
     else:
         model = CLIPWithClassifierV1(clip_model, num_classes, model_type, img_size=img_size)
 
-    # 加载权重
-    checkpoint = torch.load(checkpoint_path, map_location=device, weights_only=False)
-    model.load_state_dict(checkpoint["model_state_dict"])
+    # 加载权重（checkpoint已在前面加载用于检测lora_rank）
+    model.load_state_dict(state_dict)
     model = model.to(device)
     model.eval()
 
@@ -185,6 +195,8 @@ def main():
     parser.add_argument("--tta", action="store_true", default=True, help="使用TTA")
     parser.add_argument("--no-tta", action="store_true", help="禁用TTA")
     parser.add_argument("--device", default="auto", help="设备")
+    parser.add_argument("--min-acc", type=float, default=0.0, help="最低验证准确率阈值")
+    parser.add_argument("--num-classes", type=int, default=15, help="只集成指定类别数的模型")
     args = parser.parse_args()
 
     if args.no_tta:
@@ -203,10 +215,26 @@ def main():
         args.model_dirs = []
         for d in sorted(clip_dir.iterdir()):
             if d.is_dir() and (d / "best.pth").exists() and (d / "config.json").exists():
-                args.model_dirs.append(str(d))
+                # 读取config检查num_classes
+                try:
+                    with open(d / "config.json", "r", encoding="utf-8") as f:
+                        cfg = json.load(f)
+                    # 过滤类别数
+                    if args.num_classes and cfg.get("num_classes", 0) != args.num_classes:
+                        continue
+                    # 过滤最低准确率
+                    if cfg.get("best_val_acc", 0) < args.min_acc:
+                        continue
+                    # 排除特殊实验模型（架构不同）
+                    experiment = cfg.get("experiment", "")
+                    if experiment in ["hierarchical", "temporal_contrast", "multimodal"]:
+                        continue
+                    args.model_dirs.append(str(d))
+                except:
+                    continue
 
     if not args.model_dirs:
-        print("未找到任何已训练的模型!")
+        print("未找到任何符合条件的模型!")
         return
 
     print(f"\n找到 {len(args.model_dirs)} 个模型:")
