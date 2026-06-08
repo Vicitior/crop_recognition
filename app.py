@@ -1040,7 +1040,7 @@ def main():
     global mode, current_model_key
 
     parser = argparse.ArgumentParser(description="农作物识别 Web 界面")
-    parser.add_argument("--mode", type=str, default="clip",
+    parser.add_argument("--mode", type=str, default="clip-finetuned",
                         choices=["clip", "finetuned", "clip-finetuned"],
                         help="运行模式: clip(零样本), finetuned(EfficientNet微调), clip-finetuned(CLIP微调)")
     parser.add_argument("--clip-model", type=str, default="siglip2-so400m",
@@ -1055,22 +1055,19 @@ def main():
 
     mode = args.mode
 
-    if mode == "clip":
-        print(f"正在加载默认模型: {args.clip_model}")
-        print(load_model(args.clip_model))
-    elif mode == "clip-finetuned":
+    if mode == "clip-finetuned":
         if not os.path.isfile(args.clip_model_path):
-            print(f"错误: CLIP微调模型不存在 - {args.clip_model_path}")
-            print("请先运行: python scripts/train_clip.py --method lora --data-dir dataset")
-            return
-        print(f"加载CLIP微调模型: {args.clip_model_path}")
-        print(load_finetuned_clip(args.clip_model_path))
-    else:
-        if not os.path.isfile(args.model_path):
-            print(f"错误: 模型文件不存在 - {args.model_path}")
-            return
-        print(f"加载微调模型: {args.model_path}")
-        print(load_finetuned(args.model_path))
+            print(f"警告: CLIP微调模型不存在 - {args.clip_model_path}")
+            print("回退到零样本模式...")
+            mode = "clip"
+        else:
+            print(f"加载CLIP微调模型: {args.clip_model_path}")
+            print(load_finetuned_clip(args.clip_model_path))
+
+    # 如果微调模型加载失败，回退到零样本模式
+    if mode == "clip":
+        print(f"正在加载零样本模型: {args.clip_model}")
+        print(load_model(args.clip_model))
 
     demo = build_ui()
     demo.launch(server_port=args.port, share=args.share)
