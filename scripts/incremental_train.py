@@ -112,7 +112,7 @@ class IncrementalDataset(Dataset):
         img_path, label, _ = self.samples[idx]
         image = Image.open(img_path).convert("RGB")
         if self.transform:
-            image = image.transform(image)
+            image = self.transform(image)
         return image, label
 
 
@@ -270,6 +270,9 @@ def main():
     print(f"  批大小: {args.batch_size}")
     print("=" * 60)
 
+    # 获取类别名称列表
+    class_names = [train_dataset.idx_to_class[i] for i in range(train_dataset.num_classes)]
+
     best_acc = 0
     history = {"train_loss": [], "train_acc": []}
 
@@ -310,6 +313,9 @@ def main():
                 "model_state_dict": model.state_dict(),
                 "epoch": epoch,
                 "train_acc": train_acc,
+                "class_names": class_names,
+                "method": "lora",
+                "model_name": model_name,
             }, output_dir / "best.pth")
             print(f"  >> 保存最佳模型 (Acc: {train_acc:.2f}%)")
 
@@ -318,6 +324,9 @@ def main():
         "model_state_dict": model.state_dict(),
         "epoch": args.epochs - 1,
         "train_acc": train_acc,
+        "class_names": class_names,
+        "method": "lora",
+        "model_name": model_name,
     }, output_dir / "last.pth")
 
     # 保存配置
@@ -328,6 +337,10 @@ def main():
         "new_data_count": new_count,
         "best_acc": best_acc,
         "timestamp": datetime.now().isoformat(),
+        "class_names": class_names,
+        "model": model_name,
+        "lora_rank": lora_rank,
+        "num_classes": num_classes,
     })
 
     with open(output_dir / "config.json", "w", encoding="utf-8") as f:

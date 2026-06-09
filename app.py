@@ -1,7 +1,10 @@
 import os
+import io
+import zipfile
 import argparse
 import json
 from datetime import datetime
+from pathlib import Path
 
 import torch
 import gradio as gr
@@ -113,6 +116,111 @@ def quick_save_image(image, recommended_crop, recommended_stage, user_note=""):
 
     # 直接使用推荐的作物类型和生长阶段
     return save_uploaded_image(image, recommended_crop, recommended_stage, user_note)
+
+
+def count_feedback_images():
+    """统计用户反馈图片数量"""
+    feedback_dir = Path("dataset/user_feedback")
+    if not feedback_dir.exists():
+        return 0, {}
+    total = 0
+    by_class = {}
+    for cls_dir in feedback_dir.iterdir():
+        if cls_dir.is_dir():
+            count = 0
+            for img_path in cls_dir.glob("*"):
+                if img_path.suffix.lower() in ['.jpg', '.jpeg', '.png', '.bmp']:
+                    if not img_path.name.endswith('.json'):
+                        count += 1
+            if count > 0:
+                by_class[cls_dir.name] = count
+                total += count
+    return total, by_class
+
+
+def export_feedback_images():
+    """打包导出用户反馈图片，返回 zip 文件路径"""
+    feedback_dir = Path("dataset/user_feedback")
+    total, by_class = count_feedback_images()
+
+    if total == 0:
+        return None, "❌ 没有可导出的图片"
+
+    # 创建 zip 文件
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    zip_path = f"dataset/feedback_export_{timestamp}.zip"
+
+    with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zf:
+        for cls_dir in feedback_dir.iterdir():
+            if cls_dir.is_dir():
+                for img_path in cls_dir.glob("*"):
+                    if img_path.suffix.lower() in ['.jpg', '.jpeg', '.png', '.bmp']:
+                        if not img_path.name.endswith('.json'):
+                            # 保留目录结构: class_name/filename.jpg
+                            arcname = f"{cls_dir.name}/{img_path.name}"
+                            zf.write(img_path, arcname)
+                # 也打包元数据 json
+                for json_path in cls_dir.glob("*.json"):
+                    arcname = f"{cls_dir.name}/{json_path.name}"
+                    zf.write(json_path, arcname)
+
+    class_summary = "、".join([f"{k}({v}张)" for k, v in by_class.items()])
+    return zip_path, f"✅ 导出完成！共 {total} 张图片：{class_summary}"
+
+
+def hot_reload_model(model_file):
+    """热加载上传的新模型文件"""
+    global classifier, current_model_key
+
+    if model_file is None:
+        return "❌ 请先上传模型文件（.pth）"
+
+    try:
+        model_path = model_file.name if hasattr(model_file, 'name') else str(model_file)
+
+        # 验证是否是有效的模型文件
+        checkpoint = torch.load(model_path, map_location="cpu", weights_only=False)
+
+        if "model_state_dict" not in checkpoint:
+            return "❌ 无效的模型文件，缺少 model_state_dict"
+
+        class_names = checkpoint.get("class_names")
+        if not class_names:
+            return "❌ 模型文件缺少 class_names，请使用本系统训练生成的模型"
+
+        # 复制到标准路径
+        target_dir = Path("saved_models/clip/hot_reload")
+        target_dir.mkdir(parents=True, exist_ok=True)
+        target_path = target_dir / "best.pth"
+
+        import shutil
+        shutil.copy2(model_path, target_path)
+
+        # 保存配置
+        config = {
+            "model": checkpoint.get("model_name", "openai/clip-vit-large-patch14-336"),
+            "lora_rank": 8,
+            "num_classes": len(class_names),
+            "class_names": class_names,
+            "method": checkpoint.get("method", "lora"),
+            "hot_reload_time": datetime.now().isoformat(),
+        }
+        with open(target_dir / "config.json", "w", encoding="utf-8") as f:
+            json.dump(config, f, ensure_ascii=False, indent=2)
+
+        # 清理旧模型，加载新模型
+        if classifier is not None:
+            del classifier
+            classifier = None
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+
+        current_model_key = None  # 重置，强制重新加载
+
+        return f"✅ 模型已更新！类别数: {len(class_names)}，下次识别将自动加载新模型"
+
+    except Exception as e:
+        return f"❌ 模型加载失败: {str(e)}"
 
 # 模型显示名称（只保留最佳的零样本模型）
 MODEL_LABELS = {
@@ -762,6 +870,7 @@ def build_ui():
     }
 
     /* 响应式设计 */
+
     @media (max-width: 768px) {
         .main-container {
             padding: 20px;
@@ -913,6 +1022,55 @@ def build_ui():
                     )
                     save_status = gr.HTML("")
 
+        # ==================== 数据导出 ====================
+        gr.HTML('''
+        <div class="card fade-in" style="border-top: 4px solid #ff9800; margin-top: 8px;">
+            <h3 style="color: #e65100; margin-top: 0; font-size: 1.1em;">📦 数据导出</h3>
+            <p style="color: #6c757d; margin: 0; font-size: 0.88em;">
+                导出用户反馈图片，用于本地训练新模型
+            </p>
+        </div>
+        ''')
+        feedback_count_display = gr.HTML("")
+        export_btn = gr.Button("📦 打包导出图片", variant="secondary", elem_classes=["save-btn"])
+        export_status = gr.HTML("")
+        export_file = gr.File(visible=False, label="导出文件")
+
+        # 保存后刷新统计
+        def save_and_refresh(image, recommended_crop, recommended_stage):
+            """保存图片并刷新统计"""
+            result = quick_save_image(image, recommended_crop, recommended_stage, "一键保存（识别结果）")
+            total, _ = count_feedback_images()
+            if total > 0:
+                count_html = f'<div style="padding:10px 14px; background:#e8f5e9; border-radius:10px; border-left:3px solid #43a047; color:#2e7d32; font-size:0.9em;">📦 已积累 <b>{total}</b> 张反馈图片</div>'
+            else:
+                count_html = ""
+            return result, count_html
+
+        quick_save_btn.click(
+            fn=save_and_refresh,
+            inputs=[image_input, crop_type_dropdown, growth_stage_dropdown],
+            outputs=[quick_save_status, feedback_count_display]
+        )
+
+        def do_export():
+            """导出图片"""
+            zip_path, msg = export_feedback_images()
+            if zip_path:
+                return msg, zip_path
+            return msg, None
+
+        export_btn.click(fn=do_export, outputs=[export_status, export_file])
+
+        # 页面加载时显示反馈图片数量
+        def refresh_feedback_count():
+            total, _ = count_feedback_images()
+            if total > 0:
+                return f'<div style="padding:10px 14px; background:#e8f5e9; border-radius:10px; border-left:3px solid #43a047; color:#2e7d32; font-size:0.9em;">📦 已积累 <b>{total}</b> 张反馈图片</div>'
+            return ""
+
+        demo.load(fn=refresh_feedback_count, outputs=[feedback_count_display])
+
         # 底部：支持的作物信息
         with gr.Accordion("🌾 支持识别的作物与生长阶段", open=False, elem_classes=["crop-accordion"]):
             gr.HTML('<div style="padding: 10px 0;">')
@@ -943,8 +1101,9 @@ def build_ui():
 
             try:
                 if model_label == "CLIP微调模型 (推荐)":
-                    # 尝试多个可能的路径
+                    # 尝试多个可能的路径（热加载优先）
                     model_paths = [
+                        "saved_models/clip/hot_reload/best.pth",
                         "saved_models/clip/clip-vit-large-patch14-336-v2/best.pth",
                         "saved_models/clip/clip-large-336/best.pth",
                         "saved_models/clip/clip-large/best.pth",
@@ -1011,19 +1170,6 @@ def build_ui():
             fn=update_growth_stages,
             inputs=[crop_type_dropdown, growth_stage_dropdown],
             outputs=[growth_stage_dropdown]
-        )
-
-        # 一键保存按钮事件（使用识别结果）
-        def quick_save_with_recognition(image, recommended_crop, recommended_stage):
-            """一键保存图片（使用识别结果）"""
-            if not recommended_crop or not recommended_stage:
-                return "❌ 请先进行识别"
-            return quick_save_image(image, recommended_crop, recommended_stage, "一键保存（识别结果）")
-
-        quick_save_btn.click(
-            fn=quick_save_with_recognition,
-            inputs=[image_input, crop_type_dropdown, growth_stage_dropdown],
-            outputs=[quick_save_status]
         )
 
         # 保存按钮事件（手动选择）
