@@ -1,0 +1,29 @@
+{
+  "individual_accs": {
+    "clip-vit-large-patch14-336-v2": 76.84729064039409,
+    "clip-vit-large-lora": 82.26600985221675,
+    "clip-vit-large-336-lora8": 86.20689655172414
+  },
+  "ensemble_acc": 85.22167487684729,
+  "best_strategy": "rank",
+  "best_single_acc": 86.20689655172414,
+  "improvement": -0.9852216748768541,
+  "class_accuracies": {
+    "corn_filling": 33.333333333333336,
+    "corn_jointing": 0.0,
+    "corn_maturity": 100.0,
+    "corn_seedling": 100.0,
+    "corn_tasseling": 100.0,
+    "cotton_boll_opening": 100.0,
+    "cotton_boll_setting": 82.75862068965517,
+    "cotton_flowering": 63.333333333333336,
+    "cotton_seedling": 95.45454545454545,
+    "cotton_squaring": 85.71428571428571,
+    "wheat_heading": 100.0,
+    "wheat_jointing": 50.0,
+    "wheat_maturity": 100.0,
+    "wheat_seedling": 100.0,
+    "wheat_tillering": 33.333333333333336
+  },
+  "tta": true
+}
