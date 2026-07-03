@@ -133,6 +133,72 @@ for crop_en, crop_data in CROP_INFO.items():
 # 每种作物的阶段数
 CROP_NUM_STAGES = {crop: len(data["stages"]) for crop, data in CROP_INFO.items()}
 
+# ============================================================
+# 生育期关系矩阵（用于 Phenology-aware 建模）
+# 高斯邻接矩阵：相邻阶段关系强，远距离关系弱
+# adjacency[i][j] = exp(-|i-j|^2 / (2*sigma^2))
+# ============================================================
+import math
+
+def _build_gaussian_adjacency(num_stages, sigma=1.5):
+    """构建高斯邻接矩阵"""
+    adj = []
+    for i in range(num_stages):
+        row = []
+        for j in range(num_stages):
+            diff = abs(i - j)
+            val = math.exp(-diff ** 2 / (2 * sigma ** 2))
+            row.append(round(val, 4))
+        adj.append(row)
+    return adj
+
+# 各作物的生育期邻接矩阵（sigma=1.5）
+# 阶段顺序：seedling(0) → jointing/tillering/squaring(1) → tasseling/heading/flowering(2) → filling/boll_setting(3) → maturity/boll_opening(4)
+CROP_STAGE_ADJACENCY = {
+    'corn': _build_gaussian_adjacency(5, sigma=1.5),
+    'wheat': _build_gaussian_adjacency(5, sigma=1.5),
+    'cotton': _build_gaussian_adjacency(5, sigma=1.5),
+}
+
+# 生育期阶段的农业知识（用于知识增强）
+# GDD: 积温需求 (Growing Degree Days)
+# LAI: 叶面积指数 (Leaf Area Index)
+# growth_rate: 相对生长速率 (0-1)
+PHENOLOGY_KNOWLEDGE = {
+    'corn': {
+        'seedling':  {'gdd': (0, 200),    'lai': 0.3, 'growth_rate': 0.2},
+        'jointing':  {'gdd': (200, 600),  'lai': 2.5, 'growth_rate': 0.8},
+        'tasseling': {'gdd': (600, 1000), 'lai': 5.0, 'growth_rate': 0.6},
+        'filling':   {'gdd': (1000, 1600),'lai': 4.0, 'growth_rate': 0.4},
+        'maturity':  {'gdd': (1600, 2200),'lai': 1.5, 'growth_rate': 0.1},
+    },
+    'wheat': {
+        'seedling':  {'gdd': (0, 150),    'lai': 0.2, 'growth_rate': 0.15},
+        'tillering': {'gdd': (150, 500),  'lai': 1.5, 'growth_rate': 0.5},
+        'jointing':  {'gdd': (500, 900),  'lai': 4.0, 'growth_rate': 0.9},
+        'heading':   {'gdd': (900, 1200), 'lai': 5.5, 'growth_rate': 0.7},
+        'maturity':  {'gdd': (1200, 1800),'lai': 2.0, 'growth_rate': 0.1},
+    },
+    'cotton': {
+        'seedling':    {'gdd': (0, 300),    'lai': 0.2, 'growth_rate': 0.15},
+        'squaring':    {'gdd': (300, 800),  'lai': 1.8, 'growth_rate': 0.6},
+        'flowering':   {'gdd': (800, 1300), 'lai': 3.5, 'growth_rate': 0.8},
+        'boll_setting':{'gdd': (1300, 2000),'lai': 4.0, 'growth_rate': 0.5},
+        'boll_opening':{'gdd': (2000, 2800),'lai': 2.0, 'growth_rate': 0.1},
+    },
+}
+
+# 作物视觉复杂度（用于 Adaptive LoRA rank 选择）
+# 复杂度越高，需要的 LoRA rank 越大
+CROP_VISUAL_COMPLEXITY = {
+    'corn':  {'complexity': 'low',    'suggested_rank': 4,
+              'reason': '形态变化明显，各阶段易区分'},
+    'wheat': {'complexity': 'medium', 'suggested_rank': 8,
+              'reason': '与玉米有相似阶段（如拔节期），需中等参数'},
+    'cotton': {'complexity': 'high',  'suggested_rank': 16,
+               'reason': '蕾/花/铃形态接近，需更多参数区分'},
+}
+
 def get_ordinal_label(global_idx):
     """全局类别索引 → 该作物内的阶段序号 (0-based)"""
     return CROP_STAGE_ORDINAL.get(global_idx, global_idx)

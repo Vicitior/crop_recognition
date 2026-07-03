@@ -231,6 +231,7 @@ LABEL_TO_KEY = {v: k for k, v in MODEL_LABELS.items()}
 
 # 微调模型选项（推荐使用）
 FINETUNED_CHOICES = [
+    "创新模型-置信度路由 (最佳 93.5%)",
     "CLIP微调模型 (推荐)",
     "SigLIP2-so400m (零样本-最强)",
     "CLIP ViT-L/14@336 (零样本)",
@@ -354,12 +355,123 @@ def load_finetuned_clip(model_path):
     return f"CLIP微调模型加载成功 (方法: {method}, LoRA rank: {lora_rank}, 设备: {device}, 图像大小: {img_size})"
 
 
+def load_innovation_model(model_path=None):
+    """加载创新模型（置信度路由 + 生育期图建模 + Adaptive LoRA）"""
+    global classifier, current_model_key
+
+    if model_path is None:
+        model_path = "saved_models/innovations/all_innovations/best.pth"
+
+    if not os.path.isfile(model_path):
+        return f"❌ 创新模型不存在: {model_path}"
+
+    from transformers import CLIPModel
+    from models.confidence_router import ConfidenceRouterClassifier
+    from models.adaptive_lora import apply_adaptive_lora
+
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    checkpoint = torch.load(model_path, map_location=device, weights_only=False)
+
+    # 加载 CLIP 模型
+    clip_model = CLIPModel.from_pretrained("openai/clip-vit-large-patch14-336")
+    clip_model = clip_model.to(device)
+
+    # 应用 Adaptive LoRA
+    crop_ranks = {0: 4, 1: 8, 2: 16}
+    clip_model, _ = apply_adaptive_lora(
+        clip_model, crop_ranks=crop_ranks,
+        target_modules=["q_proj"], dropout=0.0
+    )
+    clip_model = clip_model.to(device)
+
+    # 加载 LoRA 权重
+    if 'lora_state' in checkpoint:
+        clip_model.load_state_dict(checkpoint['lora_state'], strict=False)
+
+    clip_model.eval()
+
+    # 创建置信度路由分类器
+    feat_dim = clip_model.config.projection_dim  # 768
+    router = ConfidenceRouterClassifier(
+        feat_dim=feat_dim, num_classes=15, hidden_dim=256
+    ).to(device)
+
+    # 加载分类器权重
+    if 'classifier_state' in checkpoint and 'confidence_router' in checkpoint['classifier_state']:
+        router.load_state_dict(checkpoint['classifier_state']['confidence_router'])
+
+    router.eval()
+
+    classifier = {
+        "type": "innovation",
+        "clip_model": clip_model,
+        "router": router,
+        "device": device,
+    }
+    current_model_key = "innovation"
+
+    val_acc = checkpoint.get('val_acc', 'N/A')
+    return f"✅ 创新模型加载成功 (Val Acc: {val_acc}%, 设备: {device})"
+
+
 def recognize_crop(image, model_label):
     if image is None:
         return "请上传一张农作物图片", "", ""
 
     # 根据模型类型调用不同的预测方法
-    if isinstance(classifier, dict) and classifier.get("type") == "clip_finetuned":
+    if isinstance(classifier, dict) and classifier.get("type") == "innovation":
+        # 创新模型（置信度路由）
+        from torchvision import transforms
+
+        transform = transforms.Compose([
+            transforms.Resize(336),
+            transforms.CenterCrop(336),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.48145466, 0.4578275, 0.40821073],
+                                 std=[0.26862954, 0.26130258, 0.27577711])
+        ])
+
+        image_tensor = transform(image).unsqueeze(0).to(classifier["device"])
+
+        with torch.no_grad():
+            # CLIP 视觉编码 → 投影到 768 维
+            vision_outputs = classifier["clip_model"].vision_model(pixel_values=image_tensor)
+            pooled = vision_outputs.pooler_output
+            features = classifier["clip_model"].visual_projection(pooled)
+
+            # 置信度路由预测
+            stage_logits, crop_logits, routing_info = classifier["router"](
+                features, threshold=0.7, return_routing_info=True
+            )
+            probs = torch.softmax(stage_logits, dim=1)
+
+        # 类别名列表（按 index 排序）
+        class_names = [k for k, v in sorted(CLASS_MAP.items(), key=lambda x: x[1]["index"])]
+        top_probs, top_indices = probs[0].topk(min(3, len(class_names)))
+
+        results = []
+        for prob, idx in zip(top_probs, top_indices):
+            class_name = class_names[idx.item()]
+            info = None
+            for k, v in CLASS_MAP.items():
+                if k == class_name:
+                    info = {
+                        "crop_name": v["crop_cn"],
+                        "stage_name": v["stage_cn"],
+                        "stage_days": v["days"],
+                        "total_days": v["total_days"],
+                        "description": v["description"],
+                        "crop_en": v["crop_en"],
+                        "stage_en": v["stage_en"],
+                    }
+                    break
+            results.append({
+                "class_name": class_name,
+                "confidence": prob.item(),
+                "info": info
+            })
+
+    elif isinstance(classifier, dict) and classifier.get("type") == "clip_finetuned":
         # CLIP微调模型 - 根据模型名称确定图像大小
         from torchvision import transforms
         model_name = classifier.get("model_name", "")
@@ -1100,7 +1212,15 @@ def build_ui():
                 return '<div style="text-align:center; padding:40px; color:#78909c; font-size:1.1em;">📷 请先上传一张农作物图片</div>', "", "", "", empty_dropdown
 
             try:
-                if model_label == "CLIP微调模型 (推荐)":
+                if model_label.startswith("创新模型"):
+                    # 创新模型（置信度路由 + 生育期图建模 + Adaptive LoRA）
+                    innovation_path = "saved_models/innovations/all_innovations/best.pth"
+                    if not os.path.isfile(innovation_path):
+                        empty_dropdown = gr.Dropdown(choices=[], value=None)
+                        return '<div style="text-align:center; padding:30px; color:#e53935;">❌ 创新模型不存在，请先运行训练</div>', "", "", "", empty_dropdown
+                    if current_model_key != "innovation":
+                        load_innovation_model(innovation_path)
+                elif model_label == "CLIP微调模型 (推荐)":
                     # 尝试多个可能的路径（热加载优先）
                     model_paths = [
                         "saved_models/clip/hot_reload/best.pth",
@@ -1186,20 +1306,32 @@ def main():
     global mode, current_model_key
 
     parser = argparse.ArgumentParser(description="农作物识别 Web 界面")
-    parser.add_argument("--mode", type=str, default="clip-finetuned",
-                        choices=["clip", "finetuned", "clip-finetuned"],
-                        help="运行模式: clip(零样本), finetuned(EfficientNet微调), clip-finetuned(CLIP微调)")
+    parser.add_argument("--mode", type=str, default="innovation",
+                        choices=["innovation", "clip", "finetuned", "clip-finetuned"],
+                        help="运行模式: innovation(创新模型), clip(零样本), finetuned(EfficientNet微调), clip-finetuned(CLIP微调)")
     parser.add_argument("--clip-model", type=str, default="siglip2-so400m",
                         help="默认零样本模型")
     parser.add_argument("--model-path", type=str, default="saved_models/best.pth",
                         help="微调模型路径")
     parser.add_argument("--clip-model-path", type=str, default="saved_models/clip/clip-vit-large-patch14-336-v2/best.pth",
                         help="CLIP微调模型路径")
+    parser.add_argument("--innovation-model-path", type=str,
+                        default="saved_models/innovations/all_innovations/best.pth",
+                        help="创新模型路径")
     parser.add_argument("--port", type=int, default=7860, help="服务端口")
     parser.add_argument("--share", action="store_true", help="创建公网链接")
     args = parser.parse_args()
 
     mode = args.mode
+
+    if mode == "innovation":
+        if not os.path.isfile(args.innovation_model_path):
+            print(f"警告: 创新模型不存在 - {args.innovation_model_path}")
+            print("回退到CLIP微调模型...")
+            mode = "clip-finetuned"
+        else:
+            print(f"加载创新模型: {args.innovation_model_path}")
+            print(load_innovation_model(args.innovation_model_path))
 
     if mode == "clip-finetuned":
         if not os.path.isfile(args.clip_model_path):
