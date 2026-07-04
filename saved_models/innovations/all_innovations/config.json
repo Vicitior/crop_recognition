@@ -1,0 +1,20 @@
+{
+  "use_confidence_router": false,
+  "use_phenology_graph": false,
+  "use_adaptive_lora": false,
+  "all": true,
+  "corn_rank": 4,
+  "wheat_rank": 8,
+  "cotton_rank": 16,
+  "lora_dropout": 0.1,
+  "epochs": 20,
+  "lr": 5e-05,
+  "batch_size": 8,
+  "weight_decay": 0.0001,
+  "threshold": 0.7,
+  "train_dir": "dataset/train_augmented",
+  "val_dir": "dataset/val",
+  "test_dir": "dataset/test",
+  "save_dir": "saved_models/innovations",
+  "exp_name": "all_innovations"
+}

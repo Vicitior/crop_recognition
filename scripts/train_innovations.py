@@ -124,23 +124,67 @@ def build_model(args, device):
     - phenology_graph: 生育期图建模
     - adaptive_lora: 自适应 LoRA
     - all: 全部启用
+
+    如果指定 --base-model-path，则从已有微调模型继续训练
     """
     from transformers import CLIPModel, CLIPProcessor
+    from scripts.train_clip import CLIPWithClassifier, apply_lora
 
     # 加载 CLIP 模型
     model_name = "openai/clip-vit-large-patch14-336"
     print(f"[Model] 加载 CLIP: {model_name}")
 
     clip_model = CLIPModel.from_pretrained(model_name)
-    # vision hidden_dim = 1024, projection_dim = 768
-    # 我们用 visual_projection 后的 768 维特征
     feat_dim = clip_model.config.projection_dim  # 768
-    vision_hidden_dim = clip_model.config.vision_config.hidden_size  # 1024
 
-    # 移到设备并冻结 CLIP 参数
+    # 如果有基线模型，加载已有的 LoRA 权重
+    if args.base_model_path and os.path.isfile(args.base_model_path):
+        print(f"[Model] 从基线模型继续训练: {args.base_model_path}")
+        checkpoint = torch.load(args.base_model_path, map_location='cpu', weights_only=False)
+        base_sd = checkpoint['model_state_dict']
+        base_acc = checkpoint.get('best_val_acc', 'N/A')
+        print(f"[Model] 基线准确率: {base_acc}%")
+
+        # 从 checkpoint 推断 LoRA rank
+        base_lora_rank = 8  # 默认值
+        for key, val in base_sd.items():
+            if 'lora_A' in key:
+                base_lora_rank = val.shape[0]
+                break
+        print(f"[Model] 基线 LoRA rank: {base_lora_rank}")
+
+        # 先对 CLIP 应用 LoRA（与基线模型相同的结构）
+        base_model = CLIPWithClassifier(clip_model, num_classes=15, img_size=336)
+        base_model = apply_lora(base_model, rank=base_lora_rank)
+
+        # 只加载 LoRA 权重（跳过分类器）
+        lora_sd = {}
+        for key, val in base_sd.items():
+            if 'clip_model.' in key:
+                lora_sd[key] = val
+
+        missing, unexpected = base_model.load_state_dict(lora_sd, strict=False)
+        print(f"[Model] 加载基线 LoRA 权重: {len(lora_sd)} keys")
+
+        # 提取 CLIP 部分（带 LoRA）
+        clip_model = base_model.clip_model
+
+        # 解冻 LoRA 参数
+        for param in clip_model.parameters():
+            param.requires_grad = False
+        for name, param in clip_model.named_parameters():
+            if 'lora' in name:
+                param.requires_grad = True
+
+        print(f"[Model] 已加载基线 LoRA 权重")
+    else:
+        print(f"[Model] 从零开始训练（无基线模型）")
+        # 冻结 CLIP 参数
+        for param in clip_model.parameters():
+            param.requires_grad = False
+
+    # 移到设备
     clip_model = clip_model.to(device)
-    for param in clip_model.parameters():
-        param.requires_grad = False
 
     models_dict = {}
     total_params = 0
@@ -493,6 +537,9 @@ def main():
     parser.add_argument('--weight-decay', type=float, default=1e-4)
     parser.add_argument('--threshold', type=float, default=0.7,
                         help='置信度路由阈值')
+    parser.add_argument('--base-model-path', type=str,
+                        default='saved_models/clip/clip-vit-large-patch14-336-v2/best.pth',
+                        help='基线微调模型路径（从该模型继续训练）')
 
     # 数据路径
     parser.add_argument('--train-dir', type=str,
