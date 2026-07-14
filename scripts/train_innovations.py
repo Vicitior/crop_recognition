@@ -125,25 +125,21 @@ def build_model(args, device):
     - adaptive_lora: 自适应 LoRA
     - all: 全部启用
 
-    如果指定 --base-model-path，则从已有微调模型继续训练
+    如果指定 --base-model-path，则加载完整微调模型继续训练（方案B）
     """
     from transformers import CLIPModel, CLIPProcessor
-    from scripts.train_clip import CLIPWithClassifier, apply_lora
 
-    # 加载 CLIP 模型
-    model_name = "openai/clip-vit-large-patch14-336"
-    print(f"[Model] 加载 CLIP: {model_name}")
+    feat_dim = 768  # CLIP ViT-L/14@336 的 projection_dim
 
-    clip_model = CLIPModel.from_pretrained(model_name)
-    feat_dim = clip_model.config.projection_dim  # 768
-
-    # 如果有基线模型，加载已有的 LoRA 权重
+    # 方案B：加载完整的微调模型（1.7GB）
     if args.base_model_path and os.path.isfile(args.base_model_path):
-        print(f"[Model] 从基线模型继续训练: {args.base_model_path}")
+        print(f"[Model] 方案B：加载完整微调模型: {args.base_model_path}")
         checkpoint = torch.load(args.base_model_path, map_location='cpu', weights_only=False)
         base_sd = checkpoint['model_state_dict']
         base_acc = checkpoint.get('best_val_acc', 'N/A')
+        base_model_name = checkpoint.get('model_name', 'openai/clip-vit-large-patch14-336')
         print(f"[Model] 基线准确率: {base_acc}%")
+        print(f"[Model] 基线模型: {base_model_name}")
 
         # 从 checkpoint 推断 LoRA rank
         base_lora_rank = 8  # 默认值
@@ -153,21 +149,24 @@ def build_model(args, device):
                 break
         print(f"[Model] 基线 LoRA rank: {base_lora_rank}")
 
-        # 先对 CLIP 应用 LoRA（与基线模型相同的结构）
-        base_model = CLIPWithClassifier(clip_model, num_classes=15, img_size=336)
-        base_model = apply_lora(base_model, rank=base_lora_rank)
+        # 加载基础 CLIP 模型
+        clip_model = CLIPModel.from_pretrained(base_model_name)
 
-        # 只加载 LoRA 权重（跳过分类器）
-        lora_sd = {}
+        # 应用 LoRA（与基线相同的结构）
+        from scripts.train_clip import apply_lora
+        clip_model = apply_lora(clip_model, rank=base_lora_rank, alpha=16)
+
+        # 加载完整的基线权重（包含 LoRA + 基础权重的融合信息）
+        # 只加载 CLIP 相关的 key
+        clip_sd = {}
         for key, val in base_sd.items():
-            if 'clip_model.' in key:
-                lora_sd[key] = val
+            if key.startswith('clip_model.'):
+                new_key = key.replace('clip_model.', '')
+                clip_sd[new_key] = val
 
-        missing, unexpected = base_model.load_state_dict(lora_sd, strict=False)
-        print(f"[Model] 加载基线 LoRA 权重: {len(lora_sd)} keys")
-
-        # 提取 CLIP 部分（带 LoRA）
-        clip_model = base_model.clip_model
+        missing, unexpected = clip_model.load_state_dict(clip_sd, strict=False)
+        print(f"[Model] 加载完整基线权重: {len(clip_sd)} keys, "
+              f"missing={len(missing)}, unexpected={len(unexpected)}")
 
         # 解冻 LoRA 参数
         for param in clip_model.parameters():
@@ -176,10 +175,10 @@ def build_model(args, device):
             if 'lora' in name:
                 param.requires_grad = True
 
-        print(f"[Model] 已加载基线 LoRA 权重")
+        print(f"[Model] 方案B加载完成：完整微调模型 + LoRA")
     else:
         print(f"[Model] 从零开始训练（无基线模型）")
-        # 冻结 CLIP 参数
+        clip_model = CLIPModel.from_pretrained("openai/clip-vit-large-patch14-336")
         for param in clip_model.parameters():
             param.requires_grad = False
 

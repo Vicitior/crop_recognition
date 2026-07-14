@@ -231,7 +231,6 @@ LABEL_TO_KEY = {v: k for k, v in MODEL_LABELS.items()}
 
 # 微调模型选项（推荐使用）
 FINETUNED_CHOICES = [
-    "创新模型-置信度路由 (最佳 93.5%)",
     "CLIP微调模型 (推荐)",
     "SigLIP2-so400m (零样本-最强)",
     "CLIP ViT-L/14@336 (零样本)",
@@ -324,7 +323,7 @@ def load_finetuned_clip(model_path):
     # checkpoint中的结构: Linear(768,1024) -> BN(1024) -> ReLU -> Dropout -> Linear(1024,512) -> BN(512) -> ReLU -> Dropout -> Linear(512,5)
     classifier = nn.Sequential(
         nn.Linear(768, 1024),
-        nn.BatchNorm1d(1024),
+        nn.BatchNorm1d(1024), 
         nn.ReLU(),
         nn.Dropout(0.1),
         nn.Linear(1024, 512),
@@ -1212,15 +1211,7 @@ def build_ui():
                 return '<div style="text-align:center; padding:40px; color:#78909c; font-size:1.1em;">📷 请先上传一张农作物图片</div>', "", "", "", empty_dropdown
 
             try:
-                if model_label.startswith("创新模型"):
-                    # 创新模型（置信度路由 + 生育期图建模 + Adaptive LoRA）
-                    innovation_path = "saved_models/innovations/all_innovations/best.pth"
-                    if not os.path.isfile(innovation_path):
-                        empty_dropdown = gr.Dropdown(choices=[], value=None)
-                        return '<div style="text-align:center; padding:30px; color:#e53935;">❌ 创新模型不存在，请先运行训练</div>', "", "", "", empty_dropdown
-                    if current_model_key != "innovation":
-                        load_innovation_model(innovation_path)
-                elif model_label == "CLIP微调模型 (推荐)":
+                if model_label == "CLIP微调模型 (推荐)":
                     # 尝试多个可能的路径（热加载优先）
                     model_paths = [
                         "saved_models/clip/hot_reload/best.pth",
