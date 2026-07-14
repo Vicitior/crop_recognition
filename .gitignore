@@ -11,19 +11,8 @@ venv/
 dist/
 build/
 
-# Model weights (too large for git)
-saved_models/**/*.pth
-saved_models/best.pth
-saved_models/last.pth
-saved_models/clip/*/*.pth
-
-# Dataset images (too large for git)
-dataset/train/
-dataset/val/
-dataset/test/
-dataset/train_augmented/
-dataset/augmented/
-dataset/user_feedback/
+# Model weights (too large for git) - using Git LFS
+# saved_models/**/*.pth  # 已使用 Git LFS 管理
 
 # Deployment package (too large)
 deployment/
