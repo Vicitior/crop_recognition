@@ -231,6 +231,7 @@ LABEL_TO_KEY = {v: k for k, v in MODEL_LABELS.items()}
 
 # 微调模型选项（推荐使用）
 FINETUNED_CHOICES = [
+    "创新模型-置信度路由 (最佳 93.5%)",
     "CLIP微调模型 (推荐)",
     "SigLIP2-so400m (零样本-最强)",
     "CLIP ViT-L/14@336 (零样本)",
@@ -1007,8 +1008,9 @@ def build_ui():
                 <div style="margin-top: 20px;">
                     <span class="feature-tag">深度学习</span>
                     <span class="feature-tag">CLIP模型</span>
-                    <span class="feature-tag">LoRA微调</span>
-                    <span class="feature-tag">零样本识别</span>
+                    <span class="feature-tag">置信度路由</span>
+                    <span class="feature-tag">生育期建模</span>
+                    <span class="feature-tag">93.5%准确率</span>
                 </div>
             </div>
         </div>
@@ -1041,9 +1043,9 @@ def build_ui():
                 ''')
                 model_dropdown = gr.Dropdown(
                     choices=FINETUNED_CHOICES,
-                    value="CLIP微调模型 (推荐)",
+                    value="创新模型-置信度路由 (最佳 93.5%)",
                     show_label=False,
-                    info="推荐使用 CLIP微调模型（精度最高）",
+                    info="推荐使用创新模型（精度最高 93.5%）",
                     elem_classes=["gradio-dropdown"]
                 )
                 submit_btn = gr.Button(
@@ -1211,7 +1213,15 @@ def build_ui():
                 return '<div style="text-align:center; padding:40px; color:#78909c; font-size:1.1em;">📷 请先上传一张农作物图片</div>', "", "", "", empty_dropdown
 
             try:
-                if model_label == "CLIP微调模型 (推荐)":
+                if model_label.startswith("创新模型"):
+                    # 创新模型（置信度路由 + 生育期图建模 + Adaptive LoRA）
+                    innovation_path = "saved_models/innovations/all_innovations/best.pth"
+                    if not os.path.isfile(innovation_path):
+                        empty_dropdown = gr.Dropdown(choices=[], value=None)
+                        return '<div style="text-align:center; padding:30px; color:#e53935;">❌ 创新模型不存在，请先运行训练</div>', "", "", "", empty_dropdown
+                    if current_model_key != "innovation":
+                        load_innovation_model(innovation_path)
+                elif model_label == "CLIP微调模型 (推荐)":
                     # 尝试多个可能的路径（热加载优先）
                     model_paths = [
                         "saved_models/clip/hot_reload/best.pth",
