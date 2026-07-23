@@ -77,7 +77,7 @@ def main():
             growth_classes.append(cls_name)
         else:
             removed_classes.append(cls_name)
-
+  
     print(f"保留 {len(growth_classes)} 个生长阶段类，移除 {len(removed_classes)} 个病虫害/健康类")
     print(f"\n保留的类别:")
     for cls in growth_classes:

@@ -11,16 +11,23 @@ venv/
 dist/
 build/
 
-# Model weights (too large for git) - using Git LFS
-# saved_models/**/*.pth  # 已使用 Git LFS 管理
+# Model weights (too large for git)
+*.pth
+!saved_models/innovations/all_innovations/best.pth
+data/*.db
+uploads/
 
 # Deployment package (too large)
 deployment/
+nserver-master/
+111.py
 
 # Raw dataset
 raw_datasets/
-
-# Raw dataset
+dataset/augmented/
+dataset/train/
+dataset/val/
+dataset/user_feedback/
 Cotton-Dataset/
 
 # IDE

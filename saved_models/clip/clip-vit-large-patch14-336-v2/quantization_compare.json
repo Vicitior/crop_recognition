@@ -1,0 +1,50 @@
+{
+  "fp32": {
+    "accuracy": 74.8768472906404,
+    "model_size_mb": 1656.5037279129028,
+    "inference_time_ms": 924.380008990948,
+    "class_accuracies": {
+      "corn_filling": 0.0,
+      "corn_jointing": 0.0,
+      "corn_maturity": 66.66666666666667,
+      "corn_seedling": 100.0,
+      "corn_tasseling": 100.0,
+      "cotton_boll_opening": 100.0,
+      "cotton_boll_setting": 72.41379310344827,
+      "cotton_flowering": 26.666666666666668,
+      "cotton_seedling": 90.9090909090909,
+      "cotton_squaring": 85.71428571428571,
+      "wheat_heading": 100.0,
+      "wheat_jointing": 50.0,
+      "wheat_maturity": 87.5,
+      "wheat_seedling": 71.42857142857143,
+      "wheat_tillering": 33.333333333333336
+    }
+  },
+  "int8": {
+    "accuracy": 54.679802955665025,
+    "model_size_mb": 541.9614191055298,
+    "inference_time_ms": 11990.961716725276,
+    "class_accuracies": {
+      "corn_filling": 0.0,
+      "corn_jointing": 0.0,
+      "corn_maturity": 33.333333333333336,
+      "corn_seedling": 90.0,
+      "corn_tasseling": 100.0,
+      "cotton_boll_opening": 100.0,
+      "cotton_boll_setting": 0.0,
+      "cotton_flowering": 23.333333333333332,
+      "cotton_seedling": 13.636363636363637,
+      "cotton_squaring": 82.14285714285714,
+      "wheat_heading": 83.33333333333333,
+      "wheat_jointing": 75.0,
+      "wheat_maturity": 100.0,
+      "wheat_seedling": 57.142857142857146,
+      "wheat_tillering": 33.333333333333336
+    }
+  },
+  "diff": {
+    "accuracy_diff": -20.197044334975374,
+    "compression_ratio": 3.056497509816933
+  }
+}
