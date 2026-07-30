@@ -1,6 +1,8 @@
 # 农作物生长阶段识别系统 (Crop Growth Stage Recognition)
 
-基于 CLIP + LoRA + 三大创新模块的农作物生长阶段智能识别系统，支持棉花、玉米、小麦三种作物共15个生长阶段的分类。
+[English README](README_EN.md) | [中文说明文档](README.md)
+
+基于 CLIP + LoRA + 三大创新模块的农作物生长阶段智能识别系统，支持棉花、玉米、小麦三种作物共15个生长阶段的分类。包含 **Web 端 UI** 及 **端侧离线 Android App** 完整支持。
 
 ## 项目简介
 
@@ -115,15 +117,32 @@ python app.py --share
 - 自动识别作物类型和生长阶段
 - 显示置信度和详细信息
 
-### 2. 一键保存
-- 识别后直接保存图片到训练集
-- 自动按类别归类
-- 支持添加备注信息
+### 4. 端侧离线 Android App (Edge AI)
+- **完全离线脱网运行**：集成 ONNX Runtime Android SDK，模型权重通过 INT8 动态量化压缩至 293MB (-74.9%)。
+- **一键拍照与相册诊断**：包含相机权限动态拦截、硬件位图安全转换及协程异步推理。
+- **中英文无缝双语切换**：支持 `🌐 English / 🌐 中文` 一键无缝切换 UI 及 15 类农艺水肥病虫害建议。
+- **Android Studio 零配置导入**：工程位于 `android_app/` 目录，已开启 `android.overridePathCheck=true` 避坑中文路径限制。
 
-### 3. 增量训练
-- 在现有模型基础上继续训练
-- 自动合并新数据和原始数据
-- 使用小学习率避免遗忘
+## 📱 端侧离线 Android App 部署与使用
+
+### 1. 导出与量化 ONNX 模型
+
+```bash
+# 1. 融合 LoRA 权重并导出端到端 ONNX 计算图
+python scripts/export_onnx.py
+
+# 2. 执行 INT8 动态量化 (1.16GB -> 293MB)
+python scripts/quantize_onnx.py
+
+# 3. 运行 MSE 残差与 Top-1 匹配校验
+python scripts/verify_onnx.py
+```
+
+### 2. 在 Android Studio 中运行 App
+
+1. 打开 **Android Studio**，选择 `Open` 并选中 `crop_recognition/android_app` 文件夹。
+2. 等待 Gradle 自动完成 Sync（同步依赖环境）。
+3. 连接手机或模拟器，点击 `Run 'app'`（或点击 `Build` -> `Build APK(s)` 导出 `.apk` 安装包）。
 
 ## 🖥️ 服务器部署
 

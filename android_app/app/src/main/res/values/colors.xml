@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="emerald_primary">#059669</color>
+    <color name="emerald_dark">#064E3B</color>
+    <color name="emerald_light">#ECFDF5</color>
+    <color name="accent_gold">#D97706</color>
+    <color name="bg_slate">#F8FAFC</color>
+    <color name="text_dark">#0F172A</color>
+    <color name="text_muted">#64748B</color>
+</resources>
