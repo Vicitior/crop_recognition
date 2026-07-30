@@ -171,6 +171,7 @@ class MainActivity : AppCompatActivity() {
         binding.tvWater.text = if (isEnglish) "💦 Water: ${advice.getWater(true)}" else "💦 水分管理: ${advice.getWater(false)}"
         binding.tvFertilizer.text = if (isEnglish) "🌱 Fertilizer: ${advice.getFertilizer(true)}" else "🌱 施肥调控: ${advice.getFertilizer(false)}"
         binding.tvPest.text = if (isEnglish) "🛡️ Pest Control: ${advice.getPest(true)}" else "🛡️ 病虫害预警: ${advice.getPest(false)}"
+        binding.tvOps.text = if (isEnglish) "🌾 Key Operations: ${advice.getOps(true)}" else "🌾 关键农事: ${advice.getOps(false)}"
 
         binding.cardResult.visibility = View.VISIBLE
 

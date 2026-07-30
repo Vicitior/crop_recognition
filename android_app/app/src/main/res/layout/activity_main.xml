@@ -280,6 +280,15 @@
                     android:textColor="@color/text_dark"
                     android:textSize="13sp"
                     tools:text="🛡️ 病虫害预警: 防治玉米螟、粘虫" />
+
+                <TextView
+                    android:id="@+id/tvOps"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:textColor="@color/text_dark"
+                    android:textSize="13sp"
+                    tools:text="🌾 关键农事: 中耕培土 5-8 cm" />
             </LinearLayout>
         </androidx.cardview.widget.CardView>
 

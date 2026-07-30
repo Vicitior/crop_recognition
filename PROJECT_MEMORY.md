@@ -56,8 +56,8 @@
 * **核心模块文件**：
   - `ImageUtils.kt`: 图像调整为 `336 x 336` 并按 ImageNet 标准 RGB 均值与标准差归一化为 NCHW `FloatBuffer`，支持 HARDWARE 位图安全转换。
   - `CropRecognitionEngine.kt`: 集成 `onnxruntime-android:1.17.0`，在协程后台线程中执行离线推理，小缓冲区拷贝防 OOM 闪退。
-  - `AgronomicKnowledge.kt`: 15 类阶段中英文双语农艺养护（水肥病虫害）数据库。
-  - `MainActivity.kt` & `activity_main.xml`: 动态权限申请（修复拍照闪退）、右上角 `🌐 English / 🌐 中文` 自由无缝切换、Material3 翡翠绿高颜值卡片与 Top-3 匹配渲染。
+  - `AgronomicKnowledge.kt`: 15 类阶段精细化定量中英文双语农艺养护（💦 水分持水量、🌱 肥料具体配比/用量、🛡️ 病虫害药剂/倍数、🌾 田间中耕去雄打顶农事）数据库。
+  - `MainActivity.kt` & `activity_main.xml`: 动态权限申请（修复拍照闪退）、右上角 `🌐 English / 🌐 中文` 自由无缝切换、Material3 翡翠绿高颜值卡片（新增关键农事栏目）与 Top-3 匹配渲染。
 * **已解决的 Gradle 踩坑事项**：
   - **Windows 中文路径拦截**：因父路径包含 `新建文件夹 (4)`，Android Gradle 插件会拦截编译。已在 [android_app/gradle.properties](file:///c:/Users/Vicitior/Desktop/%E6%96%B0%E5%BB%BA%E6%96%87%E4%BB%B6%E5%A4%B9%20%284%29/crop_recognition/android_app/gradle.properties) 中配置 `android.overridePathCheck=true` 成功规避。
   - **模型资源部署**：293MB 的 INT8 模型已自动存入 `android_app/app/src/main/assets/crop_model_int8.onnx`。
