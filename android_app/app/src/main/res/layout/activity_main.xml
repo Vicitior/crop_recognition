@@ -13,19 +13,18 @@
         android:orientation="vertical"
         android:padding="16dp">
 
-        <!-- 顶部 Header Banner (带中英文语言切换按钮) -->
-        <androidx.cardview.widget.CardView
+        <!-- 顶部 Header Banner (带渐变背景与中英文语言切换按钮) -->
+        <FrameLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:cardBackgroundColor="@color/emerald_dark"
-            app:cardCornerRadius="20dp"
-            app:cardElevation="6dp"
+            android:background="@drawable/bg_header_gradient"
+            android:padding="20dp"
+            android:elevation="4dp"
             android:layout_marginBottom="16dp">
 
             <RelativeLayout
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:padding="20dp">
+                android:layout_height="wrap_content">
 
                 <LinearLayout
                     android:layout_width="wrap_content"
@@ -40,7 +39,7 @@
                         android:layout_height="wrap_content"
                         android:text="🌾 农作物生育期智能诊断"
                         android:textColor="@android:color/white"
-                        android:textSize="19sp"
+                        android:textSize="20sp"
                         android:textStyle="bold" />
 
                     <TextView
@@ -61,7 +60,7 @@
                     android:layout_alignParentEnd="true"
                     android:layout_centerVertical="true"
                     android:backgroundTint="#059669"
-                    android:paddingHorizontal="12dp"
+                    android:paddingHorizontal="14dp"
                     android:paddingVertical="0dp"
                     android:text="🌐 English"
                     android:textColor="@android:color/white"
@@ -69,9 +68,9 @@
                     android:textStyle="bold"
                     app:cornerRadius="19dp" />
             </RelativeLayout>
-        </androidx.cardview.widget.CardView>
+        </FrameLayout>
 
-        <!-- 图片预览卡片 -->
+        <!-- 图片预览卡片 (带圆角与阴影) -->
         <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="240dp"
@@ -81,7 +80,8 @@
 
             <FrameLayout
                 android:layout_width="match_parent"
-                android:layout_height="match_parent">
+                android:layout_height="match_parent"
+                android:background="#F1F5F9">
 
                 <ImageView
                     android:id="@+id/ivCropPreview"
@@ -98,6 +98,7 @@
                     android:layout_gravity="center"
                     android:text="📷 点击下方按钮拍摄或选择农作物图片\nTap below to capture or pick a crop image"
                     android:gravity="center"
+                    android:lineSpacingExtra="4dp"
                     android:textColor="@color/text_muted"
                     android:textSize="14sp" />
             </FrameLayout>
@@ -120,7 +121,7 @@
                 android:text="📷 拍照识别"
                 android:textSize="15sp"
                 android:textStyle="bold"
-                app:cornerRadius="14dp" />
+                app:cornerRadius="16dp" />
 
             <Button
                 android:id="@+id/btnGallery"
@@ -132,7 +133,7 @@
                 android:text="🖼️ 相册选择"
                 android:textSize="15sp"
                 android:textStyle="bold"
-                app:cornerRadius="14dp" />
+                app:cornerRadius="16dp" />
         </LinearLayout>
 
         <!-- 推理进度 -->
@@ -143,11 +144,14 @@
             android:orientation="horizontal"
             android:gravity="center"
             android:visibility="gone"
-            android:layout_marginBottom="16dp">
+            android:layout_marginBottom="16dp"
+            android:background="#ECFDF5"
+            android:padding="12dp"
+            android:clipToPadding="false">
 
             <ProgressBar
-                android:layout_width="24dp"
-                android:layout_height="24dp"
+                android:layout_width="22dp"
+                android:layout_height="22dp"
                 android:indeterminateTint="@color/emerald_primary" />
 
             <TextView
@@ -157,6 +161,7 @@
                 android:layout_marginStart="12dp"
                 android:text="⚡ 正在执行离线 ONNX AI 推理..."
                 android:textColor="@color/emerald_primary"
+                android:textSize="13sp"
                 android:textStyle="bold" />
         </LinearLayout>
 
@@ -165,8 +170,8 @@
             android:id="@+id/cardResult"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:cardCornerRadius="20dp"
-            app:cardElevation="4dp"
+            app:cardCornerRadius="24dp"
+            app:cardElevation="6dp"
             android:visibility="gone"
             android:layout_marginBottom="16dp">
 
@@ -176,6 +181,7 @@
                 android:orientation="vertical"
                 android:padding="20dp">
 
+                <!-- 识别结果 Header -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -189,7 +195,7 @@
                         android:layout_weight="1"
                         android:text="玉米 · 拔节期"
                         android:textColor="@color/emerald_dark"
-                        android:textSize="20sp"
+                        android:textSize="21sp"
                         android:textStyle="bold" />
 
                     <TextView
@@ -197,7 +203,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:background="@color/emerald_light"
-                        android:paddingHorizontal="12dp"
+                        android:paddingHorizontal="14dp"
                         android:paddingVertical="6dp"
                         android:text="置信度: 94.2%"
                         android:textColor="@color/emerald_primary"
@@ -217,9 +223,10 @@
                 <View
                     android:layout_width="match_parent"
                     android:layout_height="1dp"
-                    android:layout_marginVertical="12dp"
+                    android:layout_marginVertical="14dp"
                     android:background="#E2E8F0" />
 
+                <!-- 阶段形态特征描述 -->
                 <TextView
                     android:id="@+id/tvHeaderDesc"
                     android:layout_width="wrap_content"
@@ -233,61 +240,65 @@
                     android:id="@+id/tvDescription"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
+                    android:layout_marginTop="6dp"
                     android:textColor="@color/text_dark"
-                    android:textSize="13sp"
-                    android:lineSpacingExtra="3dp"
+                    android:textSize="13.5sp"
+                    android:lineSpacingExtra="4dp"
                     tools:text="植株拔高齐腰，绿茎粗壮，有明显膨大节间。" />
 
                 <View
                     android:layout_width="match_parent"
                     android:layout_height="1dp"
-                    android:layout_marginVertical="12dp"
+                    android:layout_marginVertical="14dp"
                     android:background="#E2E8F0" />
 
+                <!-- 农艺养护指南 Header -->
                 <TextView
                     android:id="@+id/tvHeaderAdvice"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="🌿 智能农艺养护建议"
+                    android:text="🌿 智能精细化农艺养护指南"
                     android:textColor="@color/emerald_dark"
-                    android:textSize="14sp"
-                    android:textStyle="bold" />
+                    android:textSize="15sp"
+                    android:textStyle="bold"
+                    android:layout_marginBottom="10dp" />
 
+                <!-- 水分管理 -->
                 <TextView
                     android:id="@+id/tvWater"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="6dp"
-                    android:textColor="@color/text_dark"
+                    android:background="@drawable/bg_card_water"
+                    android:padding="12dp"
+                    android:layout_marginBottom="8dp"
+                    android:textColor="#047857"
                     android:textSize="13sp"
+                    android:lineSpacingExtra="3dp"
                     tools:text="💦 水分管理: 保持土壤湿度 60-70%" />
 
+                <!-- 施肥调控 -->
                 <TextView
                     android:id="@+id/tvFertilizer"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:textColor="@color/text_dark"
+                    android:background="@drawable/bg_card_fertilizer"
+                    android:padding="12dp"
+                    android:layout_marginBottom="8dp"
+                    android:textColor="#A16207"
                     android:textSize="13sp"
+                    android:lineSpacingExtra="3dp"
                     tools:text="🌱 施肥调控: 重施拔节壮秆肥" />
 
-                <TextView
-                    android:id="@+id/tvPest"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:textColor="@color/text_dark"
-                    android:textSize="13sp"
-                    tools:text="🛡️ 病虫害预警: 防治玉米螟、粘虫" />
-
+                <!-- 关键农事 -->
                 <TextView
                     android:id="@+id/tvOps"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:textColor="@color/text_dark"
+                    android:background="@drawable/bg_card_ops"
+                    android:padding="12dp"
+                    android:textColor="#334155"
                     android:textSize="13sp"
+                    android:lineSpacingExtra="3dp"
                     tools:text="🌾 关键农事: 中耕培土 5-8 cm" />
             </LinearLayout>
         </androidx.cardview.widget.CardView>
@@ -321,7 +332,7 @@
                     android:id="@+id/tvCandidate1"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="10dp"
+                    android:layout_marginTop="12dp"
                     android:textColor="@color/text_dark"
                     android:textSize="13sp" />
 
@@ -338,7 +349,7 @@
                     android:id="@+id/tvCandidate2"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="10dp"
+                    android:layout_marginTop="12dp"
                     android:textColor="@color/text_dark"
                     android:textSize="13sp" />
 
@@ -355,7 +366,7 @@
                     android:id="@+id/tvCandidate3"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="10dp"
+                    android:layout_marginTop="12dp"
                     android:textColor="@color/text_dark"
                     android:textSize="13sp" />
 

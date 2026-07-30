@@ -745,10 +745,10 @@ def recognize_crop(image, model_label):
         <div style="color: #1e293b; line-height: 1.6; font-size: 0.93em;">{info['description']}</div>
     </div>
 
-    <!-- 精细化定量农艺养护与预警 Card -->
+    <!-- 精细化定量农艺养护指南 Card -->
     <div style="background: #ffffff; border: 1px solid rgba(16, 185, 129, 0.15); border-radius: 14px; padding: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.02);">
         <div style="color: #064e3b; font-size: 0.95em; font-weight: 700; margin-bottom: 12px; display: flex; align-items: center; gap: 6px;">
-            <span>🌿</span> 智能精细化农艺养护与病虫害预警指南
+            <span>🌿</span> 智能精细化农艺养护指南
         </div>
         <div style="display: flex; flex-direction: column; gap: 10px; font-size: 0.88em; line-height: 1.55; color: #334155;">
             <div style="background: #f0fdf4; padding: 10px 14px; border-radius: 10px; border-left: 4px solid #10b981;">
@@ -756,9 +756,6 @@ def recognize_crop(image, model_label):
             </div>
             <div style="background: #fefce8; padding: 10px 14px; border-radius: 10px; border-left: 4px solid #eab308;">
                 <strong style="color: #a16207;">🌱 施肥调控：</strong> {advice.get('fertilizer', '')}
-            </div>
-            <div style="background: #fef2f2; padding: 10px 14px; border-radius: 10px; border-left: 4px solid #ef4444;">
-                <strong style="color: #b91c1c;">🛡️ 病虫害预警：</strong> {advice.get('pest', '')}
             </div>
             <div style="background: #f8fafc; padding: 10px 14px; border-radius: 10px; border-left: 4px solid #64748b;">
                 <strong style="color: #334155;">🌾 关键农事管理：</strong> {advice.get('ops', '')}
