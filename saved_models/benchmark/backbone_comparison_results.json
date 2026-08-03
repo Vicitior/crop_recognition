@@ -38,7 +38,7 @@
     "onnx_support": true,
     "mobile_friendly": false,
     "val_acc": 88.9,
-    "innov_acc": 94.82,
+    "innov_acc": 95.47,
     "latency_ms": 580,
     "architecture": "Large-Scale Laion2B Open Dual-Tower",
     "target_scene": "服务器端中高精度推理",
