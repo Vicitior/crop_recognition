@@ -121,16 +121,37 @@ python scripts/export_onnx.py
 python scripts/quantize_onnx.py
 ```
 
-#### B. 编译与安装 Android App
-1. 打开 **Android Studio**，选择 `Open` 并选中 `crop_recognition/android_app` 目录。
-2. 连接 Android 手机或模拟器，点击 `Run 'app'`（或点击 `Build` -> `Build APK(s)` 导出 `.apk` 安装包）。
-3. 安装后打开 App：
+#### B. 安装预编译 APK 或构建 Release 版 APK
+
+1. **直接安装预编译 Debug 版 APK**：
+   * **预编译文件路径**：`android_app/app/build/outputs/apk/debug/app-debug.apk`
+   * 可直接将此 `.apk` 文件传输至 Android 手机进行安装体验。
+
+2. **构建 Release 正式发布版 APK**：
+   * **命令行构建**：
+     ```bash
+     cd android_app
+     
+     # Windows 环境
+     gradlew.bat assembleRelease
+
+     # Linux / Mac 环境
+     ./gradlew assembleRelease
+     ```
+     构建完成后，生成文件位于：`android_app/app/build/outputs/apk/release/app-release.apk`
+   * **Android Studio 可视化导出**：
+     1. 打开 **Android Studio**，选择 `Open` 导入 `crop_recognition/android_app` 目录。
+     2. 点击顶部菜单栏 `Build` -> `Generate Signed Bundle / APK...`。
+     3. 选择 `APK`，配置签名证书（Keystore），选择构建变体 `release` 并点击 `Create` 导出正版发布包。
+
+3. **使用与操作说明**：
    * 拍照或选择农作物图片即可秒级查看诊断结果。
    * 点击顶部 **`⚙️ 服务器`** 按钮可动态修改后端 API 地址。
    * 识别有偏差时，点击 **`✏️ 结果纠错`** 重新校准作物与生育期。
    * 点击 **`☁️ 上传样本库`** 即可将照片与标注联网同步至服务器 `dataset/user_feedback/` 扩充样本量！
 
 ---
+
 
 ## 📈 训练与微调模型
 
