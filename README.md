@@ -2,19 +2,33 @@
 
 [English README](README_EN.md) | [中文说明文档](README.md)
 
-基于 CLIP + LoRA + 三大创新模块的农作物生长阶段智能识别系统，支持棉花、玉米、小麦三种作物共15个生长阶段的分类。包含 **Web 端 UI** 及 **端侧离线 Android App** 完整支持。
+基于 CLIP + LoRA + 三大创新模块的农作物生长阶段智能识别系统，支持棉花、玉米、小麦三种作物共 15 个生长阶段的分类。包含 **Web 端 AI 诊断 UI**、**FastAPI 后端 API 服务** 及 **端侧离线/联网 Android 移动 App**。
 
-## 项目简介
+---
 
-本系统利用 CLIP (Contrastive Language-Image Pre-Training) 视觉语言模型，结合 LoRA (Low-Rank Adaptation) 微调技术，实现对农作物生长阶段的高精度识别。通过 Gradio 提供友好的 Web 界面，支持图片上传、实时预测和一键保存训练数据。
+## 🌾 项目简介
 
-### 三大创新点
+本系统利用 CLIP (Contrastive Language-Image Pre-Training) 视觉语言模型，结合 LoRA (Low-Rank Adaptation) 微调技术与离线 ONNX 量化推理，实现对农作物生长阶段的高精度识别。
 
-1. **置信度引导路由 (Confidence-aware Routing)**：作物预测不确定时，同时激活多个分支加权融合，替代传统硬路由
-2. **生育期关系建模 (Phenology-aware Relation)**：通过高斯邻接矩阵和图卷积，让模型理解生长阶段的连续性
-3. **Adaptive LoRA Rank**：根据作物视觉复杂度自适应分配LoRA参数规模（玉米rank=4，小麦rank=8，棉花rank=16）
+### 🌟 核心功能亮点
 
-## 🌾 支持的作物和生长阶段
+1. **三大创新 AI 架构（准确率 93.53%）**：
+   * **置信度引导路由 (Confidence-aware Routing)**：作物预测不确定时，同时激活多个分支加权融合，替代传统硬路由
+   * **生育期关系建模 (Phenology-aware Relation)**：通过高斯邻接矩阵和图卷积，让模型理解生长阶段的连续性
+   * **Adaptive LoRA Rank**：根据作物视觉复杂度自适应分配 LoRA 参数规模（玉米 rank=4，小麦 rank=8，棉花 rank=16）
+2. **端侧离线 Android App (Edge AI)**：
+   * **脱网超快推理**：集成 ONNX Runtime Android SDK，模型 INT8 动态量化压缩至 293MB (-74.9%)
+   * **用户结果纠错与确认 (Feedback & Correction)**：识别误判时，支持用户选择正确的作物与生育期阶段并填写农艺备注
+   * **本地 SQLite 数据库**：自动存储纠错记录、本地图片沙盒与标注历史 (`crop_feedback.db`)
+   * **全球远程联网样本收集 (Dataset Expansion)**：一键将纠错/确认后的样本图片与标注上传回后端，自动扩充 `dataset/user_feedback/<crop>_<stage>/` 训练集样本量！
+   * **动态服务器 IP 配置**：App 顶部内置 `⚙️ 服务器` 配置按钮，支持随时切换局域网 IP、云服务器公网 IP 或 cpolar/ngrok 穿透网址
+3. **FastAPI 后端与数据导出**：
+   * 提供 `POST /api/recognize`、`POST /api/feedback/upload` 等 RESTful 接口
+   * 一键导出未标记样本为标准的 JSON / ZIP 数据集，方便持续增量训练
+
+---
+
+## 🌾 支持的作物与 15 个生长阶段
 
 ### 棉花 (Cotton) - 5 个阶段
 - **苗期 (Seedling)**: 出苗至现蕾前
@@ -37,259 +51,146 @@
 - **抽穗期 (Heading)**: 抽穗至成熟
 - **成熟期 (Maturity)**: 成熟至收获
 
+---
+
 ## 📊 模型精度
 
-### 模型对比
-
-| 模型 | 验证集准确率 | 说明 |
+| 模型 | 验证集准确率 (Val Acc) | 说明 |
 |------|-------------|------|
 | **创新模型（三大创新组合）** | **93.53%** | 从零训练，当前最佳 |
-| 创新模型（继承基线） | 92.23% | 从基线84.73%继续训练 |
+| 创新模型（继承基线） | 92.23% | 从基线 84.73% 继续训练 |
 | 基线 CLIP ViT-L/14@336 + LoRA | 84.73% | 原始微调模型 |
 
-### 创新点效果
+---
 
-| 方案 | Val Acc | 提升 |
-|------|---------|------|
-| 基线 | 84.73% | - |
-| +置信度路由 | ~87% | +2.3% |
-| +生育期图建模 | ~89% | +4.3% |
-| +Adaptive LoRA | ~86% | +1.3% |
-| **三者组合** | **93.53%** | **+8.8%** |
+## 🚀 快速开始与部署指南
 
-## 🚀 快速开始
-
-### 环境要求
-
-**最低配置（CPU可用）**:
-- Python 3.8+
-- 内存 8GB+
-- 硬盘 20GB+
-
-**推荐配置（GPU加速）**:
-- Python 3.8+
-- PyTorch 2.0+
-- CUDA 11.8+
-- GPU 显存 8GB+（如 RTX 3060/4060）
-
-### 安装
+### 1. 环境准备与安装
 
 ```bash
-# 克隆项目
+# 1. 克隆项目
 git clone https://github.com/Vicitior/crop_recognition.git
 cd crop_recognition
 
-# 创建虚拟环境（推荐）
+# 2. 创建虚拟环境 (推荐)
 python -m venv venv
-source venv/bin/activate  # Linux/Mac
-# 或
 venv\Scripts\activate  # Windows
+# source venv/bin/activate  # Linux/Mac
 
-# 安装依赖
+# 3. 安装依赖
 pip install -r requirements.txt
 ```
 
-### 启动 Web 界面
+---
+
+### 2. 启动 Web 诊断界面 (Gradio UI)
 
 ```bash
-# 使用创新模型（默认，93.53%准确率）
+# 使用创新模型 (默认，93.53% 准确率)
 python app.py
 
-# 指定端口
-python app.py --port 7860
-
-# 使用基线模型
-python app.py --mode clip-finetuned
-
-# 使用零样本模型
-python app.py --mode clip
-
-# 创建公网链接（可选）
-python app.py --share
+# 指定端口与开启公网分享
+python app.py --port 7860 --share
 ```
+启动后访问 `http://localhost:7860` 即可使用高颜值 Web 诊断界面。
 
-启动后访问 `http://localhost:7860` 即可使用。
+---
 
-## 📸 功能特性
-
-### 1. 图片识别
-- 上传农作物图片
-- 自动识别作物类型和生长阶段
-- 显示置信度和详细信息
-
-### 4. 端侧离线 Android App (Edge AI)
-- **完全离线脱网运行**：集成 ONNX Runtime Android SDK，模型权重通过 INT8 动态量化压缩至 293MB (-74.9%)。
-- **一键拍照与相册诊断**：包含相机权限动态拦截、硬件位图安全转换及协程异步推理。
-- **中英文无缝双语切换**：支持 `🌐 English / 🌐 中文` 一键无缝切换 UI 及 15 类农艺水肥病虫害建议。
-- **Android Studio 零配置导入**：工程位于 `android_app/` 目录，已开启 `android.overridePathCheck=true` 避坑中文路径限制。
-
-## 📱 端侧离线 Android App 部署与使用
-
-### 1. 导出与量化 ONNX 模型
+### 3. 部署 FastAPI 后端 (用于 Android App 联网与样本收集)
 
 ```bash
-# 1. 融合 LoRA 权重并导出端到端 ONNX 计算图
+# 启动 API 后端服务 (监听 0.0.0.0 端口 8000)
+python run_api.py --host 0.0.0.0 --port 8000
+```
+
+#### 🌐 远程/联网样本收集部署方案：
+* **局域网/WiFi 收集**：如果电脑与手机在同一 WiFi 下，App 中填写 `http://电脑局域网IP:8000`（如 `http://192.168.1.100:8000`）。
+* **云服务器/公网收集**：将 API 后端部署至阿里云/腾讯云/华为云 VPS，App 中填写 `http://云公网IP:8000`。
+* **免费内网穿透**：运行 `cpolar http 8000` 或 `ngrok http 8000`，在 App 中粘贴生成的 HTTPS 公网域名（如 `https://xxx.cpolar.cn`）。
+
+---
+
+### 4. 📱 端侧 Android App 部署与使用
+
+#### A. 导出与量化 ONNX 模型 (可选，已内置)
+```bash
+# 1. 导出端到端 ONNX 计算图
 python scripts/export_onnx.py
 
 # 2. 执行 INT8 动态量化 (1.16GB -> 293MB)
 python scripts/quantize_onnx.py
-
-# 3. 运行 MSE 残差与 Top-1 匹配校验
-python scripts/verify_onnx.py
 ```
 
-### 2. 在 Android Studio 中运行 App
+#### B. 编译与安装 Android App
+1. 打开 **Android Studio**，选择 `Open` 并选中 `crop_recognition/android_app` 目录。
+2. 连接 Android 手机或模拟器，点击 `Run 'app'`（或点击 `Build` -> `Build APK(s)` 导出 `.apk` 安装包）。
+3. 安装后打开 App：
+   * 拍照或选择农作物图片即可秒级查看诊断结果。
+   * 点击顶部 **`⚙️ 服务器`** 按钮可动态修改后端 API 地址。
+   * 识别有偏差时，点击 **`✏️ 结果纠错`** 重新校准作物与生育期。
+   * 点击 **`☁️ 上传样本库`** 即可将照片与标注联网同步至服务器 `dataset/user_feedback/` 扩充样本量！
 
-1. 打开 **Android Studio**，选择 `Open` 并选中 `crop_recognition/android_app` 文件夹。
-2. 等待 Gradle 自动完成 Sync（同步依赖环境）。
-3. 连接手机或模拟器，点击 `Run 'app'`（或点击 `Build` -> `Build APK(s)` 导出 `.apk` 安装包）。
+---
 
-## 🖥️ 服务器部署
+## 📈 训练与微调模型
 
-### 方案1: 本地部署（推荐个人使用）
-
+### 训练创新模型
 ```bash
-# 直接启动
-python app.py --port 7860
-```
-
-### 方案2: 云服务器部署
-
-```bash
-# 1. 克隆代码
-git clone https://github.com/Vicitior/crop_recognition.git
-cd crop_recognition
-
-# 2. 安装依赖
-pip install -r requirements.txt
-
-# 3. 启动服务
-python app.py --port 7860 --share
-```
-
-## 📈 训练模型
-
-### 训练创新模型（推荐）
-
-```bash
-# 从零训练创新模型（三大创新组合）
 python scripts/train_innovations.py --all --epochs 20 --lr 5e-5
-
-# 从基线模型继续训练
-python scripts/train_innovations.py --all --epochs 20 --lr 5e-5 \
-    --base-model-path saved_models/clip/clip-vit-large-patch14-336-v2/best.pth
 ```
 
-### 训练基线模型
-
+### 导出用户收集的反馈数据集
 ```bash
-python scripts/train_clip_v2.py \
-    --model openai/clip-vit-large-patch14-336 \
-    --lora-rank 16 \
-    --epochs 50 \
-    --lr 5e-4
+python -c "from api.service import record_service; print(record_service.export_data())"
 ```
 
-### 增量训练
-
-```bash
-python scripts/incremental_train.py \
-    --model-path saved_models/clip/clip-vit-large-patch14-336-v2/best.pth \
-    --epochs 10 \
-    --lr 1e-5
-```
-
-## 💻 CPU vs GPU
-
-| 功能 | CPU | GPU |
-|------|-----|-----|
-| 图片识别 | 2-5秒/张 | 0.1-0.5秒/张 |
-| 增量训练 | 2-4小时 | 15-30分钟 |
-| 从头训练 | 不推荐 | 2-3小时 |
-
-**结论**: 
-- **推理（识别图片）**: CPU完全可用，只是稍慢
-- **训练**: 强烈推荐GPU，CPU训练太慢
+---
 
 ## 📁 项目结构
 
 ```
 crop_recognition/
-├── app.py                          # Gradio Web 应用（支持创新模型）
-├── requirements.txt                # Python 依赖
-├── README.md                       # 项目说明
-├── .gitignore                      # Git 忽略规则
-├── models/                         # 模型定义
-│   ├── clip_classifier.py          # CLIP 零样本分类器
-│   ├── classifier.py               # EfficientNet 分类器
-│   ├── growth_stages.py            # 作物生长阶段知识库
-│   ├── confidence_router.py        # 创新1: 置信度路由
-│   ├── phenology_graph.py          # 创新2: 生育期关系建模
-│   └── adaptive_lora.py            # 创新3: Adaptive LoRA
-├── scripts/                        # 训练和评估脚本
-│   ├── train_clip_v2.py            # 基线训练脚本
-│   ├── train_innovations.py        # 创新模型训练脚本
-│   ├── incremental_train.py        # 增量训练脚本
-│   └── ...
-├── saved_models/                   # 保存的模型
-│   ├── clip/
-│   │   └── clip-vit-large-patch14-336-v2/
-│   │       └── best.pth            # 基线模型 (1.7GB)
-│   └── innovations/
-│       └── all_innovations/
-│           └── best.pth            # 创新模型 (18MB)
-└── dataset/                        # 数据集（需自行准备）
-    ├── train/
-    ├── val/
-    └── test/
+├── app.py                          # Gradio Web 诊断应用
+├── run_api.py                      # FastAPI 后端启动服务
+├── requirements.txt                # Python 依赖清单
+├── README.md                       # 项目说明文档
+├── api/                            # RESTful API 后端 (FastAPI + SQLite)
+│   ├── main.py                     # API 路由 (/api/recognize, /api/feedback/upload 等)
+│   ├── database.py                 # SQLite 数据库 DAO
+│   └── service.py                  # 业务服务与数据集样本保存逻辑
+├── android_app/                    # 端侧 Android 工程 (Kotlin + ONNX)
+│   ├── app/src/main/java/com/example/croprecognition/
+│   │   ├── MainActivity.kt         # 主界面 UI 与事件绑定
+│   │   ├── CropRecognitionEngine.kt# ONNX 本地离线推理引擎
+│   │   ├── CorrectionDialog.kt     # 用户纠错与标注弹窗
+│   │   ├── CropDatabaseHelper.kt   # Android 本地 SQLite 数据库
+│   │   └── DatasetUploader.kt      # HTTP Multipart 样本上传器
+│   └── app/src/main/res/layout/
+│       └── activity_main.xml       # App 界面布局
+├── models/                         # 模型定义 (CLIP, 路由, 图卷积, Adaptive LoRA)
+├── scripts/                        # 导出、量化、训练与评估脚本
+├── saved_models/                   # 训练保存的模型权重
+└── dataset/                        # 训练数据集与 user_feedback 用户反馈扩充库
 ```
 
-## 🔧 常见问题
-
-### Q: 没有GPU能用吗？
-**A**: 可以！CPU完全可以运行推理（识别图片），只是速度稍慢（2-5秒/张）。训练建议用GPU。
-
-### Q: 模型文件在哪里？
-**A**: 
-- 基线模型 (1.7GB): 通过 Git LFS 自动下载
-- 创新模型 (18MB): 已包含在仓库中
-
-### Q: 如何提升准确率？
-**A**: 
-1. 收集更多该类别的图片
-2. 运行增量训练
-3. 使用创新模型（已达到93.53%）
+---
 
 ## 📝 更新日志
 
-### 2026-07-23 (v2.0 终极视觉与农艺诊断重构版)
-- 🎨 **Web 界面 Masterpiece 视觉重构**：采用高科技翡翠绿与生机绿农业生态主题，引入 Glassmorphism 玻璃拟态卡片与微光交互动画。
-- 📊 **Hero 浮空透视数据仪表盘**：顶部 Banner 新增 4 块实时数据 Card（路由融合精度 93.5%、15个生育期、3大主粮作物、<0.5s 实时推理）。
-- ⚡ **1秒快捷示例测试库 (`gr.Examples`)**：内置玉米拔节期、小麦抽穗期、棉花开花期真实测试样例图，支持一键快速体验 AI 诊断。
-- 🌿 **智能农艺养护与预警 Card**：诊断结果自动关联 `💦 水肥管理`、`☀️ 光热调控` 与 `🛡️ 病虫害预警` 三维精细化农艺建议。
-- 📍 **生育期里程碑时间轴 V2**：升级纵向连贯生长时间轴，带有 `📍 当前阶段` 高光呼吸灯动画 (`@keyframes pulse-ring`)。
-- 🛠️ **Gradio 6.0 兼容与跨平台稳定性**：修复 Windows UTF-8 控制台编码与 Dropdown 容错，消除报错与 Warning。
+### 2026-08-03 (v2.5 Android 纠错、SQLite 与远程样本库扩充版)
+- ✏️ **Android 用户结果纠错**：新增 `CorrectionDialog` 交互弹窗，支持选择正确的作物与生育期阶段、添加农艺说明备注。
+- 💾 **Android 本地 SQLite 数据库**：集成 `CropDatabaseHelper.kt`，本地离线持久化存储用户纠错与历史诊断记录 (`crop_feedback.db`)。
+- ☁️ **全球远程样本库上传管道**：实现 `DatasetUploader.kt` HTTP Multipart 协议与 FastAPI `POST /api/feedback/upload` 接口，一键将纠错图片与标注发送至服务端 `dataset/user_feedback/<crop>_<stage>/` 目录扩充训练样本量。
+- ⚙️ **动态服务器配置 UI**：App 顶栏增加 `⚙️ 服务器` 按钮与 API 地址状态徽章，支持随时切换局域网、云服务器公网或内网穿透网址。
+- 🎨 **Header 界面重构**：优化全宽两行响应式 Header 布局，提升按钮触控体验与视觉精致度。
 
-### 2026-07-03
-- 实现三大创新模块：置信度路由、生育期关系建模、Adaptive LoRA
-- 创新模型准确率达到93.53%（比基线提升8.8%）
-- 集成创新模型到app.py（默认加载）
-
-### 2026-06-08
-- 新增增量训练功能
-- 优化零样本提示词（添加对比描述）
-- 添加 Focal Loss 支持
-
-### 2026-05-27
-- 完成15类全量任务训练
-- 基线准确率达到84.73%
+---
 
 ## 📄 许可证
 
-本项目仅供学习和研究使用。
+本项目仅供学习、农艺科研与学术研究使用。
 
 ## 📧 联系方式
 
-GitHub: https://github.com/Vicitior/crop_recognition
-
-如有问题或建议，请提交 Issue 或 Pull Request。
+GitHub: https://github.com/Vicitior/crop_recognition  
+如有问题或建议，欢迎提交 Issue 或 Pull Request！

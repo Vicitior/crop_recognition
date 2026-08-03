@@ -60,6 +60,37 @@ async def recognize(
 
 # ==================== 反馈接口 ====================
 
+@app.post("/api/feedback/upload", tags=["反馈"])
+async def upload_feedback_sample(
+    file: UploadFile = File(..., description="纠错后的样本图片"),
+    crop: str = Form(..., description="正确的作物英文名，如 corn, wheat, cotton"),
+    stage: str = Form(..., description="正确的生育期英文名，如 seedling, jointing"),
+    user_note: str = Form("", description="用户备注或纠错说明"),
+    is_correct: int = Form(0, description="是否已修正，0=已修改, 1=确认"),
+):
+    """
+    用户（如 Android 移动端）直接上传纠错/确认后的样本图片与分类标签，
+    存入项目数据集 `dataset/user_feedback/<crop>_<stage>/` 目录以扩充训练样本量。
+    """
+    if not file.content_type.startswith("image/"):
+        raise HTTPException(status_code=400, detail="只支持图片文件")
+
+    try:
+        contents = await file.read()
+        image = Image.open(io.BytesIO(contents))
+        res = record_service.save_feedback_sample(
+            image=image,
+            filename=file.filename or "uploaded_sample.jpg",
+            crop=crop,
+            stage=stage,
+            user_note=user_note,
+            is_correct=is_correct
+        )
+        return res
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"保存样本失败: {str(e)}")
+
+
 @app.put("/api/records/{record_id}", response_model=FeedbackResponse, tags=["反馈"])
 async def update_record(
     record_id: int,
@@ -79,6 +110,7 @@ async def update_record(
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
 
 
 # ==================== 记录查询接口 ====================

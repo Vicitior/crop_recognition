@@ -13,7 +13,7 @@
         android:orientation="vertical"
         android:padding="16dp">
 
-        <!-- 顶部 Header Banner (带渐变背景与中英文语言切换按钮) -->
+        <!-- 顶部 Header Banner (高颜值双行全宽布局，彻底解决按钮拥挤问题) -->
         <FrameLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -22,53 +22,99 @@
             android:elevation="4dp"
             android:layout_marginBottom="16dp">
 
-            <RelativeLayout
+            <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content">
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
 
-                <LinearLayout
+                <!-- 1. 标题与副标题行 -->
+                <TextView
+                    android:id="@+id/tvAppTitle"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_alignParentStart="true"
-                    android:layout_toStartOf="@id/btnLangToggle"
-                    android:orientation="vertical">
-
-                    <TextView
-                        android:id="@+id/tvAppTitle"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="🌾 农作物生育期智能诊断"
-                        android:textColor="@android:color/white"
-                        android:textSize="20sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:id="@+id/tvAppSubtitle"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
-                        android:text="CLIP+LoRA 离线 NPU 引擎 · Corn / Wheat / Cotton"
-                        android:textColor="#A7F3D0"
-                        android:textSize="12sp" />
-                </LinearLayout>
-
-                <!-- 中英文切换按钮 -->
-                <Button
-                    android:id="@+id/btnLangToggle"
-                    android:layout_width="wrap_content"
-                    android:layout_height="38dp"
-                    android:layout_alignParentEnd="true"
-                    android:layout_centerVertical="true"
-                    android:backgroundTint="#059669"
-                    android:paddingHorizontal="14dp"
-                    android:paddingVertical="0dp"
-                    android:text="🌐 English"
+                    android:text="🌾 农作物生育期智能诊断"
                     android:textColor="@android:color/white"
-                    android:textSize="12sp"
-                    android:textStyle="bold"
-                    app:cornerRadius="19dp" />
-            </RelativeLayout>
+                    android:textSize="20sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tvAppSubtitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="CLIP+LoRA 离线 NPU 引擎 · Corn / Wheat / Cotton"
+                    android:textColor="#A7F3D0"
+                    android:textSize="12sp" />
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginVertical="12dp"
+                    android:background="#33FFFFFF" />
+
+                <!-- 2. 底部控制栏: 左侧已连接服务器状态 + 右侧独立设置按钮 -->
+                <RelativeLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+
+                    <TextView
+                        android:id="@+id/tvCurrentServerStatus"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_alignParentStart="true"
+                        android:layout_toStartOf="@id/layoutHeaderActions"
+                        android:layout_centerVertical="true"
+                        android:layout_marginEnd="10dp"
+                        android:singleLine="true"
+                        android:ellipsize="middle"
+                        android:background="#20FFFFFF"
+                        android:paddingHorizontal="10dp"
+                        android:paddingVertical="4dp"
+                        android:text="🌐 API: http://10.0.2.2:8000"
+                        android:textColor="#E2E8F0"
+                        android:textSize="11sp" />
+
+                    <!-- 顶部按钮控制区: 服务器设置 + 语言切换 -->
+                    <LinearLayout
+                        android:id="@+id/layoutHeaderActions"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_alignParentEnd="true"
+                        android:layout_centerVertical="true"
+                        android:orientation="horizontal">
+
+                        <Button
+                            android:id="@+id/btnServerConfig"
+                            android:layout_width="wrap_content"
+                            android:layout_height="36dp"
+                            android:layout_marginEnd="8dp"
+                            android:backgroundTint="#047857"
+                            android:paddingHorizontal="12dp"
+                            android:paddingVertical="0dp"
+                            android:text="⚙️ 服务器"
+                            android:textColor="@android:color/white"
+                            android:textSize="12sp"
+                            android:textStyle="bold"
+                            app:cornerRadius="18dp" />
+
+                        <Button
+                            android:id="@+id/btnLangToggle"
+                            android:layout_width="wrap_content"
+                            android:layout_height="36dp"
+                            android:backgroundTint="#059669"
+                            android:paddingHorizontal="12dp"
+                            android:paddingVertical="0dp"
+                            android:text="🌐 English"
+                            android:textColor="@android:color/white"
+                            android:textSize="12sp"
+                            android:textStyle="bold"
+                            app:cornerRadius="18dp" />
+                    </LinearLayout>
+                </RelativeLayout>
+            </LinearLayout>
         </FrameLayout>
+
+
 
         <!-- 图片预览卡片 (带圆角与阴影) -->
         <androidx.cardview.widget.CardView
@@ -300,8 +346,48 @@
                     android:textSize="13sp"
                     android:lineSpacingExtra="3dp"
                     tools:text="🌾 关键农事: 中耕培土 5-8 cm" />
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginVertical="14dp"
+                    android:background="#E2E8F0" />
+
+                <!-- 用户纠错与样本库上传交互按钮区 -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <Button
+                        android:id="@+id/btnFeedback"
+                        android:layout_width="0dp"
+                        android:layout_height="44dp"
+                        android:layout_weight="1"
+                        android:layout_marginEnd="6dp"
+                        android:backgroundTint="#ECFDF5"
+                        android:text="✏️ 结果纠错"
+                        android:textColor="#059669"
+                        android:textSize="13sp"
+                        android:textStyle="bold"
+                        app:cornerRadius="12dp" />
+
+                    <Button
+                        android:id="@+id/btnUploadDataset"
+                        android:layout_width="0dp"
+                        android:layout_height="44dp"
+                        android:layout_weight="1"
+                        android:layout_marginStart="6dp"
+                        android:backgroundTint="#059669"
+                        android:text="☁️ 上传样本库"
+                        android:textColor="@android:color/white"
+                        android:textSize="13sp"
+                        android:textStyle="bold"
+                        app:cornerRadius="12dp" />
+                </LinearLayout>
             </LinearLayout>
         </androidx.cardview.widget.CardView>
+
 
         <!-- Top-3 候选匹配列表 -->
         <androidx.cardview.widget.CardView

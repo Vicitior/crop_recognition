@@ -1,6 +1,7 @@
 package com.example.croprecognition
 
 import android.Manifest
+import android.content.Context
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.ImageDecoder
@@ -9,8 +10,10 @@ import android.os.Build
 import android.os.Bundle
 import android.provider.MediaStore
 import android.view.View
+import android.widget.EditText
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
@@ -22,7 +25,12 @@ class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private var recognitionEngine: CropRecognitionEngine? = null
     private var currentResults: List<RecognitionResult>? = null
-    private var isEnglish: Boolean = false // 语言状态控制 (默认中文)
+    private var currentBitmap: Bitmap? = null
+    private lateinit var dbHelper: CropDatabaseHelper
+    private var isEnglish: Boolean = false
+
+    // 默认后端服务器地址 (可在 App 内点击“⚙️ 服务器”按钮任意修改为公网 IP、云服务器域名或局域网 IP)
+    private var serverBaseUrl: String = "http://10.0.2.2:8000"
 
     // 1. 从相册选择图片回调
     private val pickGalleryLauncher = registerForActivityResult(
@@ -38,7 +46,7 @@ class MainActivity : AppCompatActivity() {
         bitmap?.let { processAndRecognize(it) }
     }
 
-    // 3. 相机运行时权限申请回调 (解决拍照闪退)
+    // 3. 相机运行时权限申请回调
     private val requestCameraPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { isGranted: Boolean ->
@@ -57,6 +65,10 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+        // 初始化本地数据库与服务器配置
+        dbHelper = CropDatabaseHelper(this)
+        loadServerConfig()
 
         // 异步初始化本地 ONNX 推理引擎
         lifecycleScope.launch {
@@ -81,6 +93,21 @@ class MainActivity : AppCompatActivity() {
             checkCameraPermissionAndLaunch()
         }
 
+        // 结果纠错按钮绑定
+        binding.btnFeedback.setOnClickListener {
+            showCorrectionDialog(isUploadDirect = false)
+        }
+
+        // 上传样本库按钮绑定
+        binding.btnUploadDataset.setOnClickListener {
+            showCorrectionDialog(isUploadDirect = true)
+        }
+
+        // 服务器配置按钮绑定
+        binding.btnServerConfig.setOnClickListener {
+            showServerConfigDialog()
+        }
+
         // 语言切换按钮绑定
         binding.btnLangToggle.setOnClickListener {
             isEnglish = !isEnglish
@@ -89,6 +116,58 @@ class MainActivity : AppCompatActivity() {
 
         updateLanguageUI()
     }
+
+    private fun loadServerConfig() {
+        val sp = getSharedPreferences("crop_app_config", Context.MODE_PRIVATE)
+        serverBaseUrl = sp.getString("server_url", "http://10.0.2.2:8000") ?: "http://10.0.2.2:8000"
+        updateServerStatusBadge()
+    }
+
+    private fun updateServerStatusBadge() {
+        binding.tvCurrentServerStatus.text = "🌐 API: $serverBaseUrl"
+    }
+
+    private fun showServerConfigDialog() {
+        val etUrl = EditText(this).apply {
+            setText(serverBaseUrl)
+            hint = "http://192.168.1.100:8000 or http://your-cloud-ip:8000"
+            setPadding(40, 30, 40, 30)
+        }
+
+        val title = if (isEnglish) "⚙️ Configure Backend Server URL" else "⚙️ 配置公网 / 局域网服务器地址"
+        val message = if (isEnglish)
+            "Enter your Python API URL for remote dataset collection:\n\n• Local WiFi: http://192.168.x.x:8000\n• Cloud Server: http://x.x.x.x:8000 or domain\n• Tunneling (cpolar/ngrok): https://xxx.cpolar.cn"
+        else
+            "请输入你的 Python API 服务器地址，支持全球远程联网收集样本：\n\n• 局域网/WiFi收集: http://192.168.x.x:8000\n• 云服务器/公网收集: http://云公网IP:8000 或域名\n• 内网穿透映射: https://xxx.cpolar.cn"
+
+        AlertDialog.Builder(this)
+            .setTitle(title)
+            .setMessage(message)
+            .setView(etUrl)
+            .setPositiveButton(if (isEnglish) "Save" else "保存配置") { _, _ ->
+                val newUrl = etUrl.text.toString().trim()
+                if (newUrl.startsWith("http://") || newUrl.startsWith("https://")) {
+                    serverBaseUrl = newUrl
+                    getSharedPreferences("crop_app_config", Context.MODE_PRIVATE)
+                        .edit().putString("server_url", newUrl).apply()
+                    updateServerStatusBadge()
+                    Toast.makeText(
+                        this,
+                        if (isEnglish) "Server URL saved: $newUrl" else "✅ 服务器地址已保存: $newUrl",
+                        Toast.LENGTH_LONG
+                    ).show()
+                } else {
+                    Toast.makeText(
+                        this,
+                        if (isEnglish) "Invalid URL format! Must start with http:// or https://" else "❌ 无效格式！地址必须以 http:// 或 https:// 开头",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            }
+            .setNegativeButton(if (isEnglish) "Cancel" else "取消", null)
+            .show()
+    }
+
 
     private fun checkCameraPermissionAndLaunch() {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
@@ -121,6 +200,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun processAndRecognize(bitmap: Bitmap) {
+        currentBitmap = bitmap
         binding.ivCropPreview.setImageBitmap(bitmap)
         binding.tvImagePlaceholder.visibility = View.GONE
 
@@ -194,9 +274,144 @@ class MainActivity : AppCompatActivity() {
         binding.cardTopCandidates.visibility = View.VISIBLE
     }
 
+    /**
+     * 弹出纠错与样本标注对话框
+     */
+    private fun showCorrectionDialog(isUploadDirect: Boolean) {
+        val results = currentResults
+        val bitmap = currentBitmap
+        if (results.isNullOrEmpty() || bitmap == null) {
+            Toast.makeText(
+                this,
+                if (isEnglish) "Please recognize an image first" else "请先拍照或选择图片进行识别",
+                Toast.LENGTH_SHORT
+            ).show()
+            return
+        }
+
+        val top1 = results.first()
+        val origCropCn = top1.advice.getCropName(false)
+        val origStageCn = top1.advice.getStageName(false)
+
+        val dialog = CorrectionDialog(
+            context = this,
+            currentCropCn = origCropCn,
+            currentStageCn = origStageCn,
+            isEnglish = isEnglish,
+            onSaveLocal = { cropEn, stageEn, cropCn, stageCn, note, isCorrect ->
+                saveFeedbackToLocal(bitmap, origCropCn, origStageCn, cropEn, stageEn, cropCn, stageCn, note, isCorrect)
+            },
+            onSaveAndUpload = { cropEn, stageEn, cropCn, stageCn, note, isCorrect ->
+                saveFeedbackAndUpload(bitmap, origCropCn, origStageCn, cropEn, stageEn, cropCn, stageCn, note, isCorrect)
+            }
+        )
+        dialog.show()
+    }
+
+    /**
+     * 保存纠错记录至 Android 本地 SQLite 数据库
+     */
+    private fun saveFeedbackToLocal(
+        bitmap: Bitmap,
+        origCropCn: String,
+        origStageCn: String,
+        cropEn: String,
+        stageEn: String,
+        cropCn: String,
+        stageCn: String,
+        note: String,
+        isCorrect: Int
+    ) {
+        try {
+            val imageFile = DatasetUploader.saveBitmapToLocalFile(cacheDir, bitmap)
+            val rowId = dbHelper.insertRecord(
+                imagePath = imageFile.absolutePath,
+                originalCrop = origCropCn,
+                originalStage = origStageCn,
+                correctedCrop = "$cropCn ($cropEn)",
+                correctedStage = "$stageCn ($stageEn)",
+                isCorrected = isCorrect,
+                userNote = note,
+                isUploaded = 0
+            )
+
+            val msg = if (isEnglish)
+                "✅ Correction saved to local database (ID: $rowId)!"
+            else
+                "✅ 纠错结果已成功存入本地数据库 (记录 ID: $rowId)！"
+            Toast.makeText(this, msg, Toast.LENGTH_LONG).show()
+
+        } catch (e: Exception) {
+            val msg = if (isEnglish) "Failed to save local database: ${e.message}" else "❌ 本地保存失败: ${e.message}"
+            Toast.makeText(this, msg, Toast.LENGTH_LONG).show()
+            e.printStackTrace()
+        }
+    }
+
+    /**
+     * 保存至本地 SQLite 数据库并上传回 Python 后端样本库
+     */
+    private fun saveFeedbackAndUpload(
+        bitmap: Bitmap,
+        origCropCn: String,
+        origStageCn: String,
+        cropEn: String,
+        stageEn: String,
+        cropCn: String,
+        stageCn: String,
+        note: String,
+        isCorrect: Int
+    ) {
+        val imageFile = DatasetUploader.saveBitmapToLocalFile(cacheDir, bitmap)
+        val rowId = dbHelper.insertRecord(
+            imagePath = imageFile.absolutePath,
+            originalCrop = origCropCn,
+            originalStage = origStageCn,
+            correctedCrop = "$cropCn ($cropEn)",
+            correctedStage = "$stageCn ($stageEn)",
+            isCorrected = isCorrect,
+            userNote = note,
+            isUploaded = 0
+        )
+
+        Toast.makeText(
+            this,
+            if (isEnglish) "⚡ Saved locally, uploading to server ($serverBaseUrl)..." else "⚡ 本地已保存，正在远程上传至服务器 ($serverBaseUrl)...",
+            Toast.LENGTH_SHORT
+        ).show()
+
+        // 异步协程联网上传回后端
+        lifecycleScope.launch {
+            val result = DatasetUploader.uploadSampleToBackend(
+                serverBaseUrl = serverBaseUrl,
+                imageFile = imageFile,
+                cropEn = cropEn,
+                stageEn = stageEn,
+                userNote = note,
+                isCorrect = isCorrect
+            )
+
+            result.onSuccess { respText ->
+                dbHelper.updateUploadStatus(rowId, 1)
+                val msg = if (isEnglish)
+                    "🎉 Upload successful! Sample added to dataset dataset/user_feedback/${cropEn}_${stageEn}"
+                else
+                    "🎉 远程上传成功！样本已扩充至服务器数据集 dataset/user_feedback/${cropEn}_${stageEn}"
+                Toast.makeText(this@MainActivity, msg, Toast.LENGTH_LONG).show()
+            }.onFailure { err ->
+                val msg = if (isEnglish)
+                    "⚠️ Local DB saved, but upload failed: ${err.message}\n(Check server URL at $serverBaseUrl)"
+                else
+                    "⚠️ 本地已保存，但联网上传失败: ${err.message}\n(请在顶部点击“⚙️ 服务器”确认地址是否连通: $serverBaseUrl)"
+                Toast.makeText(this@MainActivity, msg, Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
     private fun updateLanguageUI() {
         if (isEnglish) {
             binding.btnLangToggle.text = "🌐 中文"
+            binding.btnServerConfig.text = "⚙️ Server"
             binding.tvAppTitle.text = "🌾 Crop Growth Stage AI"
             binding.tvAppSubtitle.text = "CLIP+LoRA Offline Engine · Corn / Wheat / Cotton"
             binding.tvImagePlaceholder.text = "📷 Tap below to capture or pick a crop image"
@@ -206,8 +421,11 @@ class MainActivity : AppCompatActivity() {
             binding.tvHeaderDesc.text = "💡 Stage Characteristics"
             binding.tvHeaderAdvice.text = "🌿 Agronomic Management Advice"
             binding.tvHeaderCandidates.text = "📈 Top-3 Candidate Matching"
+            binding.btnFeedback.text = "✏️ Feedback"
+            binding.btnUploadDataset.text = "☁️ Upload Dataset"
         } else {
             binding.btnLangToggle.text = "🌐 English"
+            binding.btnServerConfig.text = "⚙️ 服务器"
             binding.tvAppTitle.text = "🌾 农作物生育期智能诊断"
             binding.tvAppSubtitle.text = "CLIP+LoRA 离线 NPU 引擎 · 玉米 / 小麦 / 棉花"
             binding.tvImagePlaceholder.text = "📷 点击下方按钮拍摄或选择农作物图片"
@@ -217,9 +435,10 @@ class MainActivity : AppCompatActivity() {
             binding.tvHeaderDesc.text = "💡 阶段形态特征描述"
             binding.tvHeaderAdvice.text = "🌿 智能农艺养护建议"
             binding.tvHeaderCandidates.text = "📈 Top-3 候选匹配分析"
+            binding.btnFeedback.text = "✏️ 结果纠错"
+            binding.btnUploadDataset.text = "☁️ 上传样本库"
         }
 
-        // 如果已有结果，重新刷新文字
         currentResults?.let { displayResults(it) }
     }
 

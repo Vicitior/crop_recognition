@@ -308,6 +308,67 @@ class RecordService:
             message=f"成功导出 {len(records)} 条记录",
         )
 
+    def save_feedback_sample(
+        self,
+        image: Image.Image,
+        filename: str,
+        crop: str,
+        stage: str,
+        user_note: str = "",
+        is_correct: int = 0
+    ) -> Dict[str, Any]:
+        """
+        保存用户纠错/确认的样本图片至 dataset/user_feedback/<crop>_<stage>/ 目录，
+        并记录元数据与数据库，用于扩充项目数据集样本量。
+        """
+        class_name = f"{crop}_{stage}"
+        save_dir = Path("dataset") / "user_feedback" / class_name
+        save_dir.mkdir(parents=True, exist_ok=True)
+
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+        save_filename = f"user_{timestamp}.jpg"
+        save_path = save_dir / save_filename
+
+        if image.mode != "RGB":
+            image = image.convert("RGB")
+        image.save(save_path, "JPEG", quality=95)
+
+        metadata = {
+            "filename": save_filename,
+            "crop": crop,
+            "stage": stage,
+            "class_name": class_name,
+            "user_note": user_note,
+            "is_correct": is_correct,
+            "timestamp": timestamp,
+            "source": "android_app_upload"
+        }
+
+        json_path = save_dir / f"user_{timestamp}.json"
+        with open(json_path, "w", encoding="utf-8") as f:
+            json.dump(metadata, f, ensure_ascii=False, indent=2)
+
+        # 写入数据库记录
+        record_id = RecordDAO.create({
+            "image_path": str(save_path),
+            "image_filename": filename,
+            "model_crop": crop,
+            "model_stage": stage,
+            "user_crop": crop,
+            "user_stage": stage,
+            "user_note": user_note,
+            "is_correct": is_correct,
+            "exported": 0
+        })
+
+        return {
+            "success": True,
+            "record_id": record_id,
+            "file_path": str(save_path),
+            "class_name": class_name,
+            "message": f"样本已成功存入项目数据集 {class_name}"
+        }
+
 
 # ==================== 全局实例 ====================
 
@@ -316,3 +377,4 @@ model_service = ModelService()
 
 # 记录服务
 record_service = RecordService(model_service)
+
