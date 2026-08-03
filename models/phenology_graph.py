@@ -316,30 +316,17 @@ class PhenologyAwareClassifier(nn.Module):
             cotton_stage_logits
         ], dim=-1)  # [B, 15]
 
-        # 4. 置信度路由融合
-        max_prob, top_crop = crop_probs.max(dim=-1)  # [B]
+        # 4. 向量化置信度路由融合 (纯 Tensor 操作，全面兼容 GPU 显卡)
+        stage_logits_3d = all_stage_logits.view(B, 3, 5)
 
-        # 初始化全局 logits
-        fused_logits = torch.zeros(B, self.num_classes, device=device)
+        max_prob, top_crop = crop_probs.max(dim=-1)  # [B], [B]
+        hard_mask = (max_prob > threshold).unsqueeze(-1).unsqueeze(-1)  # [B, 1, 1]
 
-        # 硬路由：置信度 > 阈值
-        hard_mask = max_prob > threshold
-        if hard_mask.any():
-            for crop_id in range(3):
-                mask = hard_mask & (top_crop == crop_id)
-                if mask.any():
-                    start = crop_id * 5
-                    fused_logits[mask] = all_stage_logits[mask]
+        top_crop_one_hot = F.one_hot(top_crop, num_classes=3).float()  # [B, 3]
+        hard_logits_3d = stage_logits_3d * top_crop_one_hot.unsqueeze(-1)  # [B, 3, 5]
+        soft_logits_3d = stage_logits_3d * crop_probs.unsqueeze(-1)  # [B, 3, 5]
 
-        # 软路由：置信度 <= 阈值，多分支融合
-        soft_mask = ~hard_mask
-        if soft_mask.any():
-            for crop_id in range(3):
-                start = crop_id * 5
-                end = start + 5
-                # 用作物概率加权阶段 logits
-                weight = crop_probs[soft_mask, crop_id].unsqueeze(-1)
-                fused_logits[soft_mask, start:end] = \
-                    weight * all_stage_logits[soft_mask, start:end]
+        fused_logits_3d = torch.where(hard_mask, hard_logits_3d, soft_logits_3d)
+        fused_logits = fused_logits_3d.view(B, self.num_classes)  # [B, 15]
 
         return fused_logits, crop_logits

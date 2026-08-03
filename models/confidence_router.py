@@ -152,35 +152,27 @@ class ConfidenceRouterClassifier(nn.Module):
         # 3. 拼接为全局阶段 logits
         all_stage_logits = torch.cat(stage_logits_list, dim=-1)  # [B, 15]
 
-        # 4. 置信度路由融合
-        max_prob, top_crop = crop_probs.max(dim=-1)  # [B]
+        # 4. 向量化置信度路由融合 (纯 Tensor 操作，全面兼容 GPU 显卡)
+        # 将 [B, 15] 重构为 [B, 3, 5]（3 种作物，每种 5 个阶段）
+        stage_logits_3d = all_stage_logits.view(B, self.num_crops, self.stages_per_crop)
 
-        # 初始化融合 logits
-        fused_logits = torch.zeros(B, self.num_classes, device=device)
+        max_prob, top_crop = crop_probs.max(dim=-1)  # [B], [B]
+        hard_mask = (max_prob > threshold).unsqueeze(-1).unsqueeze(-1)  # [B, 1, 1]
 
-        # 统计路由决策
-        hard_count = 0
-        soft_count = 0
+        # 硬路由：仅保留 top-1 作物分支的 logits
+        top_crop_one_hot = F.one_hot(top_crop, num_classes=self.num_crops).float()  # [B, 3]
+        hard_logits_3d = stage_logits_3d * top_crop_one_hot.unsqueeze(-1)  # [B, 3, 5]
 
-        for i in range(B):
-            if max_prob[i] > threshold:
-                # 高置信度：硬路由，只用 top-1 分支
-                crop_id = top_crop[i]
-                start = crop_id * self.stages_per_crop
-                end = start + self.stages_per_crop
-                fused_logits[i, start:end] = all_stage_logits[i, start:end]
-                hard_count += 1
-            else:
-                # 低置信度：软路由，多分支加权融合
-                for crop_id in range(self.num_crops):
-                    start = crop_id * self.stages_per_crop
-                    end = start + self.stages_per_crop
-                    weight = crop_probs[i, crop_id]
-                    fused_logits[i, start:end] += \
-                        weight * all_stage_logits[i, start:end]
-                soft_count += 1
+        # 软路由：按 crop_probs 概率加权融合
+        soft_logits_3d = stage_logits_3d * crop_probs.unsqueeze(-1)  # [B, 3, 5]
+
+        # 按置信度掩码选择硬/软路由
+        fused_logits_3d = torch.where(hard_mask, hard_logits_3d, soft_logits_3d)
+        fused_logits = fused_logits_3d.view(B, self.num_classes)  # [B, 15]
 
         if return_routing_info:
+            hard_count = (max_prob > threshold).sum().item()
+            soft_count = B - hard_count
             routing_info = {
                 'hard_count': hard_count,
                 'soft_count': soft_count,
