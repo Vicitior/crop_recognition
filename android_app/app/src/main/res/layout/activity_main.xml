@@ -52,48 +52,82 @@
                     android:layout_marginVertical="12dp"
                     android:background="#33FFFFFF" />
 
-                <!-- 2. 底部控制栏: 左侧已连接服务器状态 + 右侧独立设置按钮 -->
-                <RelativeLayout
+                <!-- 2. 底部控制栏: 左侧已连接服务器/引擎状态 + 右侧独立设置按钮 -->
+                <LinearLayout
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content">
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
 
-                    <TextView
-                        android:id="@+id/tvCurrentServerStatus"
-                        android:layout_width="wrap_content"
+                    <LinearLayout
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_alignParentStart="true"
-                        android:layout_toStartOf="@id/layoutHeaderActions"
-                        android:layout_centerVertical="true"
-                        android:layout_marginEnd="10dp"
-                        android:singleLine="true"
-                        android:ellipsize="middle"
-                        android:background="#20FFFFFF"
-                        android:paddingHorizontal="10dp"
-                        android:paddingVertical="4dp"
-                        android:text="🌐 API: http://10.0.2.2:8000"
-                        android:textColor="#E2E8F0"
-                        android:textSize="11sp" />
+                        android:orientation="horizontal"
+                        android:layout_marginBottom="8dp">
 
-                    <!-- 顶部按钮控制区: 服务器设置 + 语言切换 -->
+                        <TextView
+                            android:id="@+id/tvCurrentServerStatus"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:layout_marginEnd="6dp"
+                            android:singleLine="true"
+                            android:ellipsize="middle"
+                            android:background="#20FFFFFF"
+                            android:paddingHorizontal="10dp"
+                            android:paddingVertical="4dp"
+                            android:text="🌐 API: http://10.0.2.2:8000"
+                            android:textColor="#E2E8F0"
+                            android:textSize="11sp" />
+
+                        <TextView
+                            android:id="@+id/tvCurrentModelStatus"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:layout_marginStart="6dp"
+                            android:singleLine="true"
+                            android:ellipsize="middle"
+                            android:background="#20FFFFFF"
+                            android:paddingHorizontal="10dp"
+                            android:paddingVertical="4dp"
+                            android:text="⚡ 引擎: INT8 动态量化版"
+                            android:textColor="#FEF08A"
+                            android:textSize="11sp" />
+                    </LinearLayout>
+
+                    <!-- 顶部按钮控制区: 引擎选择 + 服务器设置 + 语言切换 -->
                     <LinearLayout
                         android:id="@+id/layoutHeaderActions"
-                        android:layout_width="wrap_content"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_alignParentEnd="true"
-                        android:layout_centerVertical="true"
+                        android:gravity="end"
                         android:orientation="horizontal">
+
+                        <Button
+                            android:id="@+id/btnModelConfig"
+                            android:layout_width="wrap_content"
+                            android:layout_height="36dp"
+                            android:layout_marginEnd="6dp"
+                            android:backgroundTint="#0369A1"
+                            android:paddingHorizontal="10dp"
+                            android:paddingVertical="0dp"
+                            android:text="⚡ 引擎模式"
+                            android:textColor="@android:color/white"
+                            android:textSize="11sp"
+                            android:textStyle="bold"
+                            app:cornerRadius="18dp" />
 
                         <Button
                             android:id="@+id/btnServerConfig"
                             android:layout_width="wrap_content"
                             android:layout_height="36dp"
-                            android:layout_marginEnd="8dp"
+                            android:layout_marginEnd="6dp"
                             android:backgroundTint="#047857"
-                            android:paddingHorizontal="12dp"
+                            android:paddingHorizontal="10dp"
                             android:paddingVertical="0dp"
                             android:text="⚙️ 服务器"
                             android:textColor="@android:color/white"
-                            android:textSize="12sp"
+                            android:textSize="11sp"
                             android:textStyle="bold"
                             app:cornerRadius="18dp" />
 
@@ -101,16 +135,16 @@
                             android:id="@+id/btnLangToggle"
                             android:layout_width="wrap_content"
                             android:layout_height="36dp"
-                            android:backgroundTint="#059669"
-                            android:paddingHorizontal="12dp"
+                            android:backgroundTint="#475569"
+                            android:paddingHorizontal="10dp"
                             android:paddingVertical="0dp"
-                            android:text="🌐 English"
+                            android:text="🌐 EN/中"
                             android:textColor="@android:color/white"
-                            android:textSize="12sp"
+                            android:textSize="11sp"
                             android:textStyle="bold"
                             app:cornerRadius="18dp" />
                     </LinearLayout>
-                </RelativeLayout>
+                </LinearLayout>
             </LinearLayout>
         </FrameLayout>
 
