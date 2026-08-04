@@ -1,0 +1,89 @@
+/* pages/knowledge/knowledge.wxss */
+.tab-row {
+  display: flex;
+  background: #FFFFFF;
+  margin: 0 24rpx 24rpx;
+  border-radius: 20rpx;
+  padding: 8rpx;
+  box-shadow: 0 2rpx 10rpx rgba(15, 23, 42, 0.05);
+}
+
+.tab-item {
+  flex: 1;
+  text-align: center;
+  padding: 16rpx 0;
+  font-size: 28rpx;
+  font-weight: 700;
+  color: #64748B;
+  border-radius: 14rpx;
+  transition: all 0.2s ease;
+}
+
+.active-tab {
+  background: #047857;
+  color: #FFFFFF;
+  box-shadow: 0 4rpx 12rpx rgba(4, 120, 87, 0.25);
+}
+
+.stage-card {
+  border-top: 6rpx solid #059669;
+}
+
+.stage-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12rpx;
+}
+
+.stage-title-group {
+  display: flex;
+  align-items: center;
+}
+
+.stage-num {
+  background: #059669;
+  color: #FFFFFF;
+  width: 40rpx;
+  height: 40rpx;
+  border-radius: 20rpx;
+  text-align: center;
+  line-height: 40rpx;
+  font-size: 24rpx;
+  font-weight: 800;
+  margin-right: 12rpx;
+}
+
+.stage-name-zh {
+  font-size: 34rpx;
+  font-weight: 800;
+  color: #0F172A;
+  margin-right: 10rpx;
+}
+
+.stage-name-en {
+  font-size: 24rpx;
+  color: #64748B;
+}
+
+.stage-desc {
+  font-size: 26rpx;
+  color: #334155;
+  line-height: 1.6;
+  background: #F8FAFC;
+  padding: 16rpx;
+  border-radius: 12rpx;
+  margin-bottom: 16rpx;
+}
+
+.advice-row {
+  font-size: 24rpx;
+  color: #334155;
+  margin-bottom: 8rpx;
+  line-height: 1.5;
+}
+
+.adv-tag {
+  font-weight: 700;
+  color: #15803D;
+}

@@ -1,0 +1,36 @@
+<!-- pages/history/history.wxml -->
+<view class="container">
+
+  <view class="header-banner">
+    <view class="header-title">📜 诊断历史记录</view>
+    <view class="header-subtitle">自动保存您在微信小程序上的 AI 识别历史与纠错记录</view>
+    <view class="header-bar">
+      <view class="server-badge">共记录 {{records.length}} 条诊断样本</view>
+      <view class="btn-config-icon btn-danger-icon" bindtap="clearAllHistory" wx:if="{{records.length > 0}}">🗑️ 清空历史</view>
+    </view>
+  </view>
+
+  <view class="empty-box" wx:if="{{records.length === 0}}">
+    <text class="empty-icon">🍃</text>
+    <text class="empty-title">暂无历史诊断记录</text>
+    <text class="empty-sub">快去首页拍照或选择农作物图片进行诊断吧！</text>
+  </view>
+
+  <view class="history-list" wx:else>
+    <view class="card history-card" wx:for="{{records}}" wx:key="id">
+      <view class="history-main">
+        <image class="history-img" src="{{item.imagePath}}" mode="aspectFill"></image>
+
+        <view class="history-info">
+          <view class="info-top">
+            <text class="history-crop">{{item.cropZh}}</text>
+            <text class="history-stage">{{item.stageZh}}</text>
+          </view>
+          <view class="history-conf">置信度: {{item.confidence}}</view>
+          <view class="history-time">🕒 {{item.timestamp}}</view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+</view>

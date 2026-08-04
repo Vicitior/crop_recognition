@@ -1,0 +1,86 @@
+/* pages/history/history.wxss */
+.btn-danger-icon {
+  background: #EF4444 !important;
+}
+
+.empty-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 100rpx 40rpx;
+}
+
+.empty-icon {
+  font-size: 100rpx;
+  margin-bottom: 20rpx;
+}
+
+.empty-title {
+  font-size: 32rpx;
+  font-weight: 700;
+  color: #334155;
+}
+
+.empty-sub {
+  font-size: 24rpx;
+  color: #94A3B8;
+  margin-top: 12rpx;
+}
+
+.history-card {
+  padding: 24rpx;
+  margin-bottom: 16rpx;
+}
+
+.history-main {
+  display: flex;
+  align-items: center;
+}
+
+.history-img {
+  width: 140rpx;
+  height: 140rpx;
+  border-radius: 16rpx;
+  margin-right: 20rpx;
+  background: #F1F5F9;
+  flex-shrink: 0;
+}
+
+.history-info {
+  flex: 1;
+}
+
+.info-top {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8rpx;
+}
+
+.history-crop {
+  background: #ECFDF5;
+  color: #047857;
+  font-size: 22rpx;
+  font-weight: 700;
+  padding: 4rpx 14rpx;
+  border-radius: 10rpx;
+  margin-right: 12rpx;
+}
+
+.history-stage {
+  font-size: 32rpx;
+  font-weight: 800;
+  color: #0F172A;
+}
+
+.history-conf {
+  font-size: 24rpx;
+  color: #059669;
+  font-weight: 600;
+  margin-bottom: 6rpx;
+}
+
+.history-time {
+  font-size: 22rpx;
+  color: #94A3B8;
+}

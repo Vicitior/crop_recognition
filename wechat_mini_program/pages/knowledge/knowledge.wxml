@@ -1,0 +1,37 @@
+<!-- pages/knowledge/knowledge.wxml -->
+<view class="container">
+
+  <view class="header-banner">
+    <view class="header-title">📚 生育期图谱百科</view>
+    <view class="header-subtitle">包含玉米、小麦、棉花 15 个关键生育期识别特征与管理指南</view>
+  </view>
+
+  <!-- 作物分类 Tab 选项卡 -->
+  <view class="tab-row">
+    <view class="tab-item {{currentCrop === 'corn' ? 'active-tab' : ''}}" bindtap="switchCrop" data-crop="corn">🌽 玉米</view>
+    <view class="tab-item {{currentCrop === 'wheat' ? 'active-tab' : ''}}" bindtap="switchCrop" data-crop="wheat">🌾 小麦</view>
+    <view class="tab-item {{currentCrop === 'cotton' ? 'active-tab' : ''}}" bindtap="switchCrop" data-crop="cotton">☁️ 棉花</view>
+  </view>
+
+  <!-- 生育期阶段卡片列表 -->
+  <view class="stage-list">
+    <view class="card stage-card" wx:for="{{activeStages}}" wx:key="id">
+      <view class="stage-header">
+        <view class="stage-title-group">
+          <text class="stage-num">{{index + 1}}</text>
+          <text class="stage-name-zh">{{item.nameZh}}</text>
+          <text class="stage-name-en">({{item.nameEn}})</text>
+        </view>
+      </view>
+
+      <view class="stage-desc">{{item.desc}}</view>
+
+      <view class="advice-box">
+        <view class="advice-row"><text class="adv-tag">🌱 追肥要点：</text>{{item.fertilizer}}</view>
+        <view class="advice-row"><text class="adv-tag">💧 灌溉管理：</text>{{item.irrigation}}</view>
+        <view class="advice-row"><text class="adv-tag">🐛 防治关注：</text>{{item.pest}}</view>
+      </view>
+    </view>
+  </view>
+
+</view>

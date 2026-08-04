@@ -18,11 +18,22 @@ from api.models import (
 )
 from api.service import model_service, record_service
 
+from fastapi.middleware.cors import CORSMiddleware
+
 # 创建 FastAPI 应用
 app = FastAPI(
     title="农作物生长阶段识别 API",
     description="基于 CLIP 的农作物生长阶段识别系统，支持图片识别、结果修正、数据管理",
     version="1.0.0",
+)
+
+# 配置 CORS 允许跨域请求（支持微信小程序 / Web UI）
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 

@@ -1,0 +1,140 @@
+<!-- pages/index/index.wxml -->
+<view class="container">
+
+  <!-- 1. 顶部 Banner 控制栏 -->
+  <view class="header-banner">
+    <view class="header-title">🌾 农作物生育期智能诊断</view>
+    <view class="header-subtitle">CLIP+LoRA 视觉语言 AI 模型 · 玉米 / 小麦 / 棉花</view>
+
+    <view class="header-bar">
+      <view class="server-badge">🌐 API: {{serverUrl}}</view>
+      <view class="btn-config-icon" bindtap="openServerModal">⚙️ 服务器</view>
+    </view>
+  </view>
+
+  <!-- 2. 图片选择与预览卡片 -->
+  <view class="card">
+    <view class="card-title">📷 诊断图片</view>
+
+    <view class="image-box" bindtap="chooseImage">
+      <image wx:if="{{imagePath}}" class="preview-image" src="{{imagePath}}" mode="aspectFill"></image>
+      <view wx:else class="placeholder-box">
+        <text class="placeholder-icon">📸</text>
+        <text class="placeholder-text">点击选择照片 或 拍照诊断</text>
+        <text class="placeholder-sub">支持玉米、小麦、棉花 15 个生育期识别</text>
+      </view>
+    </view>
+
+    <view class="action-row" wx:if="{{imagePath}}">
+      <button class="btn-sub" bindtap="chooseImage">🔄 重新选图</button>
+      <button class="btn-sub btn-danger" bindtap="clearImage">🗑️ 清除图片</button>
+    </view>
+
+    <button class="btn-primary main-btn {{isAnalyzing ? 'btn-disabled' : ''}}" bindtap="runDiagnosis">
+      {{isAnalyzing ? '⏳ AI 正在深度诊断中...' : '🌾 一键 AI 智能诊断'}}
+    </button>
+  </view>
+
+  <!-- 3. AI 诊断结果卡片 -->
+  <view class="card result-card" wx:if="{{resultData}}">
+    <view class="card-title justify-between">
+      <text>🎯 诊断结论</text>
+      <view class="tag-crop {{cropClassMap[resultData.primaryCrop]}}">
+        {{resultData.cropZh}}
+      </view>
+    </view>
+
+    <!-- Top-1 大字显示 -->
+    <view class="primary-result">
+      <view class="stage-zh-large">{{resultData.stageZh}}</view>
+      <view class="stage-en-sub">{{resultData.stageName}}</view>
+      <view class="confidence-badge">置信度: {{(resultData.confidence * 100).toFixed(1)}}%</view>
+    </view>
+
+    <view class="progress-bar-bg" style="margin-bottom: 24rpx;">
+      <view class="progress-bar-fill" style="width: {{(resultData.confidence * 100).toFixed(1)}}%;"></view>
+    </view>
+
+    <!-- Top-3 候选列表 -->
+    <view class="top3-title">候选生育期分布 (Top-3)</view>
+    <view class="top3-item" wx:for="{{resultData.top3}}" wx:key="stage">
+      <view class="top3-info">
+        <text class="top3-name">{{item.stage_zh || item.stage}}</text>
+        <text class="top3-conf">{{(item.confidence * 100).toFixed(1)}}%</text>
+      </view>
+      <view class="progress-bar-bg">
+        <view class="progress-bar-fill" style="width: {{(item.confidence * 100).toFixed(1)}}%;"></view>
+      </view>
+    </view>
+
+    <!-- 农艺指导建议 -->
+    <view class="advice-box" wx:if="{{resultData.advice}}">
+      <view class="advice-header">💡 {{resultData.cropZh}}·{{resultData.stageZh}} 农艺管理建议</view>
+
+      <view class="advice-item" wx:if="{{resultData.advice.fertilizer}}">
+        <text class="advice-label">🌱 追肥建议：</text>
+        <text class="advice-val">{{resultData.advice.fertilizer}}</text>
+      </view>
+      <view class="advice-item" wx:if="{{resultData.advice.irrigation}}">
+        <text class="advice-label">💧 灌溉管理：</text>
+        <text class="advice-val">{{resultData.advice.irrigation}}</text>
+      </view>
+      <view class="advice-item" wx:if="{{resultData.advice.pest_control}}">
+        <text class="advice-label">🐛 病虫害防治：</text>
+        <text class="advice-val">{{resultData.advice.pest_control}}</text>
+      </view>
+      <view class="advice-item" wx:if="{{resultData.advice.key_notes}}">
+        <text class="advice-label">📌 核心关注：</text>
+        <text class="advice-val">{{resultData.advice.key_notes}}</text>
+      </view>
+    </view>
+
+    <!-- 纠错反馈按钮 -->
+    <button class="btn-feedback" bindtap="openFeedbackModal">✏️ 结果不准？点击纠错并上传样本库</button>
+  </view>
+
+  <!-- 4. 服务器设置弹窗 -->
+  <view class="modal-bg" wx:if="{{showServerModal}}">
+    <view class="modal-card">
+      <view class="modal-title">⚙️ 配置 Python API 服务器地址</view>
+      <view class="modal-desc">请输入后端 API 服务器地址，支持局域网或公网远程联网诊断：</view>
+      <input class="modal-input" value="{{inputServerUrl}}" bindinput="onServerInput" placeholder="http://192.168.1.100:8000" />
+      <view class="modal-tips">
+        <text>• 局域网 WiFi: http://192.168.x.x:8000\n</text>
+        <text>• 公网/云服务器: http://公网IP:8000\n</text>
+        <text>• 内网穿透: https://xxx.cpolar.cn</text>
+      </view>
+      <view class="modal-btn-row">
+        <button class="modal-btn btn-cancel" bindtap="closeServerModal">取消</button>
+        <button class="modal-btn btn-confirm" bindtap="saveServerConfig">保存配置</button>
+      </view>
+    </view>
+  </view>
+
+  <!-- 5. 纠错反馈弹窗 -->
+  <view class="modal-bg" wx:if="{{showFeedbackModal}}">
+    <view class="modal-card">
+      <view class="modal-title">✏️ 结果纠错与样本收集</view>
+      <view class="modal-desc">请选择该图片的实际正确作物与生育期阶段：</view>
+
+      <view class="form-label">选择作物：</view>
+      <picker bindchange="onCropChange" value="{{selectedCropIndex}}" range="{{cropOptions}}" range-key="label">
+        <view class="picker-box">{{cropOptions[selectedCropIndex].label}} ▾</view>
+      </picker>
+
+      <view class="form-label">选择正确生长阶段：</view>
+      <picker bindchange="onStageChange" value="{{selectedStageIndex}}" range="{{currentStageOptions}}" range-key="label">
+        <view class="picker-box">{{currentStageOptions[selectedStageIndex].label}} ▾</view>
+      </picker>
+
+      <view class="form-label">农艺备注说明（可选）：</view>
+      <textarea class="modal-textarea" value="{{feedbackNote}}" bindinput="onNoteInput" placeholder="例如：叶片受旱黄化，实际为拔节期..." />
+
+      <view class="modal-btn-row">
+        <button class="modal-btn btn-cancel" bindtap="closeFeedbackModal">取消</button>
+        <button class="modal-btn btn-confirm" bindtap="submitFeedback">一键上传样本库</button>
+      </view>
+    </view>
+  </view>
+
+</view>

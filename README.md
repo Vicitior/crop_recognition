@@ -2,7 +2,7 @@
 
 [English README](README_EN.md) | [中文说明文档](README.md)
 
-基于 CLIP + LoRA + 三大创新模块的农作物生长阶段智能识别系统，支持棉花、玉米、小麦三种作物共 15 个生长阶段的分类。包含 **Web 端 AI 诊断 UI**、**FastAPI 后端 API 服务** 及 **端侧离线/联网 Android 移动 App**。
+基于 CLIP + LoRA + 三大创新模块的农作物生长阶段智能识别系统，支持棉花、玉米、小麦三种作物共 15 个生长阶段的分类。全平台覆盖 **Web 端 AI 诊断 UI**、**FastAPI 后端 API 服务**、**端侧 Android App** 及 **微信小程序 (WeChat Mini Program)**。
 
 ---
 
@@ -16,13 +16,15 @@
    * **置信度引导路由 (Confidence-aware Routing)**：作物预测不确定时，同时激活多个分支加权融合，替代传统硬路由
    * **生育期关系建模 (Phenology-aware Relation)**：通过高斯邻接矩阵和图卷积，让模型理解生长阶段的连续性
    * **Adaptive LoRA Rank**：根据作物视觉复杂度自适应分配 LoRA 参数规模（玉米 rank=4，小麦 rank=8，棉花 rank=16）
-2. **端侧离线 Android App (Edge AI)**：
-   * **脱网超快推理**：集成 ONNX Runtime Android SDK，模型 INT8 动态量化压缩至 293MB (-74.9%)
+2. **微信小程序 (WeChat Mini Program)**：
+   * **全功能无缝迁移**：工程位于 `wechat_mini_program/`，包含相册选图/相机拍照、Top-3 概率分布、农艺管理建议卡片与 15 个生育期科普图谱。
+   * **远程 Api 通信与动态配置**：内置 `⚙️ 服务器设置` 弹窗，支持局域网 IP、云服务器公网 IP 或内网穿透网址随时切换。
+   * **样本纠错与收集**：支持在微信内一键纠错并上传照片至后端 `dataset/user_feedback/` 自动扩充训练集！
+3. **端侧离线 Android App (Edge AI)**：
+   * **双引擎自主选择**：支持切换 **⚡ INT8 动态量化加速版 (293MB)** 与 **💎 FP32 原生高精度版 (1.2GB)**
    * **用户结果纠错与确认 (Feedback & Correction)**：识别误判时，支持用户选择正确的作物与生育期阶段并填写农艺备注
    * **本地 SQLite 数据库**：自动存储纠错记录、本地图片沙盒与标注历史 (`crop_feedback.db`)
-   * **全球远程联网样本收集 (Dataset Expansion)**：一键将纠错/确认后的样本图片与标注上传回后端，自动扩充 `dataset/user_feedback/<crop>_<stage>/` 训练集样本量！
-   * **动态服务器 IP 配置**：App 顶部内置 `⚙️ 服务器` 配置按钮，支持随时切换局域网 IP、云服务器公网 IP 或 cpolar/ngrok 穿透网址
-3. **FastAPI 后端与数据导出**：
+4. **FastAPI 后端与数据导出**：
    * 提供 `POST /api/recognize`、`POST /api/feedback/upload` 等 RESTful 接口
    * 一键导出未标记样本为标准的 JSON / ZIP 数据集，方便持续增量训练
 
