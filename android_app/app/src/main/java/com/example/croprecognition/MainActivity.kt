@@ -32,50 +32,28 @@ class MainActivity : AppCompatActivity() {
     // 默认后端服务器地址 (可在 App 内点击“⚙️ 服务器”按钮任意修改)
     private var serverBaseUrl: String = "http://10.0.2.2:8000"
 
-    // 默认推理引擎模式 ("int8": 动态量化轻量版 | "fp32": 原生高精度全参数版)
-    private var selectedModelVersion: String = "int8"
-
-    // 1. 从相册选择图片回调
-    private val pickGalleryLauncher = registerForActivityResult(
-        ActivityResultContracts.GetContent()
-    ) { uri: Uri? ->
-        uri?.let { handleSelectedImage(it) }
-    }
-
-    // 2. 拍照识别回调
-    private val takePictureLauncher = registerForActivityResult(
-        ActivityResultContracts.TakePicturePreview()
-    ) { bitmap: Bitmap? ->
-        bitmap?.let { processAndRecognize(it) }
-    }
-
-    // 3. 相机运行时权限申请回调
-    private val requestCameraPermissionLauncher = registerForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { isGranted: Boolean ->
-        if (isGranted) {
-            takePictureLauncher.launch(null)
-        } else {
-            Toast.makeText(
-                this,
-                if (isEnglish) "Camera permission denied" else "相机权限被拒绝，无法拍照",
-                Toast.LENGTH_SHORT
-            ).show()
-        }
-    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // 初始化本地数据库、服务器配置与模型版本
+        // 初始化本地数据库与服务器配置
         dbHelper = CropDatabaseHelper(this)
         loadServerConfig()
-        loadModelEngineConfig()
 
         // 异步初始化本地 ONNX 推理引擎
-        initModelEngine()
+        lifecycleScope.launch {
+            try {
+                recognitionEngine = CropRecognitionEngine(this@MainActivity, "crop_model_int8.onnx")
+            } catch (e: Exception) {
+                Toast.makeText(
+                    this@MainActivity,
+                    if (isEnglish) "Offline model init failed: ${e.message}" else "❌ 离线模型初始化失败: ${e.message}",
+                    Toast.LENGTH_LONG
+                ).show()
+                e.printStackTrace()
+            }
+        }
 
         // 按钮点击事件绑定
         binding.btnGallery.setOnClickListener {
@@ -96,11 +74,6 @@ class MainActivity : AppCompatActivity() {
             showCorrectionDialog(isUploadDirect = true)
         }
 
-        // 引擎模式切换按钮绑定
-        binding.btnModelConfig.setOnClickListener {
-            showModelEngineConfigDialog()
-        }
-
         // 服务器配置按钮绑定
         binding.btnServerConfig.setOnClickListener {
             showServerConfigDialog()
@@ -113,73 +86,6 @@ class MainActivity : AppCompatActivity() {
         }
 
         updateLanguageUI()
-    }
-
-    private fun getModelFileName(): String {
-        return if (selectedModelVersion == "fp32") "crop_model_fp32.onnx" else "crop_model_int8.onnx"
-    }
-
-    private fun loadModelEngineConfig() {
-        val sp = getSharedPreferences("crop_app_config", Context.MODE_PRIVATE)
-        selectedModelVersion = sp.getString("model_version", "int8") ?: "int8"
-        updateModelStatusBadge()
-    }
-
-    private fun updateModelStatusBadge() {
-        if (selectedModelVersion == "fp32") {
-            binding.tvCurrentModelStatus.text = if (isEnglish) "💎 Engine: FP32 Native" else "💎 引擎: FP32 原生高精度"
-        } else {
-            binding.tvCurrentModelStatus.text = if (isEnglish) "⚡ Engine: INT8 Quantized" else "⚡ 引擎: INT8 动态量化版"
-        }
-    }
-
-    private fun initModelEngine() {
-        val modelFileName = getModelFileName()
-        lifecycleScope.launch {
-            try {
-                recognitionEngine?.close()
-                recognitionEngine = CropRecognitionEngine(this@MainActivity, modelFileName)
-                updateModelStatusBadge()
-            } catch (e: Exception) {
-                Toast.makeText(
-                    this@MainActivity,
-                    if (isEnglish) "Engine init failed ($modelFileName): ${e.message}" else "❌ 引擎初始化失败 ($modelFileName): ${e.message}",
-                    Toast.LENGTH_LONG
-                ).show()
-                e.printStackTrace()
-            }
-        }
-    }
-
-    private fun showModelEngineConfigDialog() {
-        val options = arrayOf(
-            if (isEnglish) "⚡ INT8 Quantized (Fast, ~293MB - Recommended for mobile)" else "⚡ INT8 动态量化版 (内存小·推理快·~293MB·推荐手机)",
-            if (isEnglish) "💎 FP32 Full Precision (Max Accuracy, ~1.2GB - For flagship devices)" else "💎 FP32 原生高精度版 (全精度无损·~1.2GB·适合旗舰机/PC)"
-        )
-
-        val currentIdx = if (selectedModelVersion == "fp32") 1 else 0
-
-        AlertDialog.Builder(this)
-            .setTitle(if (isEnglish) "⚡ Select Model Engine Version" else "⚡ 选择 AI 推理引擎模式")
-            .setSingleChoiceItems(options, currentIdx) { dialog, which ->
-                val newVersion = if (which == 1) "fp32" else "int8"
-                if (newVersion != selectedModelVersion) {
-                    selectedModelVersion = newVersion
-                    getSharedPreferences("crop_app_config", Context.MODE_PRIVATE)
-                        .edit().putString("model_version", newVersion).apply()
-
-                    initModelEngine()
-
-                    Toast.makeText(
-                        this,
-                        if (isEnglish) "Switched engine to ${newVersion.uppercase()}" else "✅ 已切换为 ${if (newVersion == "fp32") "FP32 原生高精度" else "INT8 动态量化"}引擎",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                }
-                dialog.dismiss()
-            }
-            .setNegativeButton(if (isEnglish) "Cancel" else "取消", null)
-            .show()
     }
 
     private fun loadServerConfig() {
