@@ -9,7 +9,7 @@ ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     TZ=Asia/Shanghai
 
-# 安装系统依赖（使用兼容 Debian 12 的 libgl1 替代过期的 libgl1-mesa-glx）
+# 安装系统基础依赖
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     libgl1 \
@@ -17,8 +17,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# 复制依赖文件并安装 Python 依赖
-COPY requirements.txt .
+# 复制轻量依赖文件并安装 CPU 版 PyTorch（体积由 2.5GB 降至 150MB，防止构建超时）
+COPY requirements_cloud.txt ./requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
 
 # 复制项目代码与保存的模型权重
