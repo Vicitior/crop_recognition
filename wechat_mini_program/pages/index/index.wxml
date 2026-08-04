@@ -48,11 +48,11 @@
     <view class="primary-result">
       <view class="stage-zh-large">{{resultData.stageZh}}</view>
       <view class="stage-en-sub">{{resultData.stageName}}</view>
-      <view class="confidence-badge">置信度: {{(resultData.confidence * 100).toFixed(1)}}%</view>
+      <view class="confidence-badge">置信度: {{resultData.confidencePercent}}%</view>
     </view>
 
     <view class="progress-bar-bg" style="margin-bottom: 24rpx;">
-      <view class="progress-bar-fill" style="width: {{(resultData.confidence * 100).toFixed(1)}}%;"></view>
+      <view class="progress-bar-fill" style="width: {{resultData.confidencePercent}}%;"></view>
     </view>
 
     <!-- Top-3 候选列表 -->
@@ -60,10 +60,10 @@
     <view class="top3-item" wx:for="{{resultData.top3}}" wx:key="stage">
       <view class="top3-info">
         <text class="top3-name">{{item.stage_zh || item.stage}}</text>
-        <text class="top3-conf">{{(item.confidence * 100).toFixed(1)}}%</text>
+        <text class="top3-conf">{{item.confidencePercent}}%</text>
       </view>
       <view class="progress-bar-bg">
-        <view class="progress-bar-fill" style="width: {{(item.confidence * 100).toFixed(1)}}%;"></view>
+        <view class="progress-bar-fill" style="width: {{item.confidencePercent}}%;"></view>
       </view>
     </view>
 

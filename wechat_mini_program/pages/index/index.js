@@ -152,6 +152,13 @@ Page({
             const stageZh = primary ? (primary.stage_zh || primary.stage) : '未知阶段';
             const stageName = primary ? primary.stage : '';
             const confidence = primary ? primary.confidence : 0.95;
+            const confidencePercent = (confidence * 100).toFixed(1);
+
+            const processedTop3 = (data.top3 || []).map(item => ({
+              ...item,
+              stage_zh: item.stage_zh || item.stage,
+              confidencePercent: (item.confidence * 100).toFixed(1)
+            }));
 
             const processedResult = {
               primaryCrop: cropKey,
@@ -159,7 +166,8 @@ Page({
               stageZh: stageZh,
               stageName: stageName,
               confidence: confidence,
-              top3: data.top3 || [],
+              confidencePercent: confidencePercent,
+              top3: processedTop3,
               advice: data.advice || null,
               recordId: data.record_id || Date.now()
             };
