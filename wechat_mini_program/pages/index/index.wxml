@@ -103,20 +103,44 @@ module.exports = {
     <button class="btn-feedback" bindtap="openFeedbackModal">✏️ 结果不准？点击纠错并上传样本库</button>
   </view>
 
-  <!-- 4. 服务器设置弹窗 -->
+  <!-- 4. 服务器与通信模式设置弹窗 -->
   <view class="modal-bg" wx:if="{{showServerModal}}">
     <view class="modal-card">
-      <view class="modal-title">⚙️ 配置 Python API 服务器地址</view>
-      <view class="modal-desc">请输入后端 API 服务器地址，支持局域网或公网远程联网诊断：</view>
-      <input class="modal-input" value="{{inputServerUrl}}" bindinput="onServerInput" placeholder="http://192.168.1.100:8000" />
-      <view class="modal-tips">
-        <text>• 局域网 WiFi: http://192.168.x.x:8000\n</text>
-        <text>• 公网/云服务器: http://公网IP:8000\n</text>
-        <text>• 内网穿透: https://xxx.cpolar.cn</text>
+      <view class="modal-title">⚙️ AI 后端通信模式设置</view>
+      <view class="modal-desc">选择诊断通信模式，或直接切换为微信官方云托管：</view>
+
+      <view class="form-label">通信模式：</view>
+      <radio-group class="radio-group" bindchange="onModeChange">
+        <label class="radio-label">
+          <radio value="cloud" checked="{{inputApiMode === 'cloud'}}" color="#047857" /> ☁️ 微信云托管 (免 IP/公网域名)
+        </label>
+        <label class="radio-label">
+          <radio value="custom" checked="{{inputApiMode === 'custom'}}" color="#047857" /> 🌐 自定义 HTTP API 地址
+        </label>
+      </radio-group>
+
+      <view wx:if="{{inputApiMode === 'cloud'}}">
+        <view class="form-label">微信云托管环境 ID：</view>
+        <input class="modal-input" value="{{inputCloudEnvId}}" bindinput="onEnvIdInput" placeholder="prod-crop-recognition" />
+        <view class="modal-tips">
+          <text>• 微信官方零配置通信，无需设置局域网 IP 或内网穿透\n</text>
+          <text>• 点击保存后小程序会自动通过 wx.cloud 容器服务调用</text>
+        </view>
       </view>
+
+      <view wx:else>
+        <view class="form-label">自定义服务器 API URL：</view>
+        <input class="modal-input" value="{{inputServerUrl}}" bindinput="onServerInput" placeholder="http://192.168.1.100:8000" />
+        <view class="modal-tips">
+          <text>• 局域网 WiFi: http://192.168.x.x:8000\n</text>
+          <text>• 公网/云服务器: http://公网IP:8000\n</text>
+          <text>• 内网穿透: https://xxx.cpolar.cn</text>
+        </view>
+      </view>
+
       <view class="modal-btn-row">
         <button class="modal-btn btn-cancel" bindtap="closeServerModal">取消</button>
-        <button class="modal-btn btn-confirm" bindtap="saveServerConfig">保存配置</button>
+        <button class="modal-btn btn-confirm" bindtap="saveServerConfig">保存设置</button>
       </view>
     </view>
   </view>

@@ -2,7 +2,7 @@
   "miniprogramRoot": "./",
   "projectname": "crop-recognition-miniprogram",
   "description": "农作物生长阶段智能识别 - 微信小程序",
-  "appid": "touristappid",
+  "appid": "wx3855f518c928810a",
   "setting": {
     "urlCheck": false,
     "es6": true,
@@ -37,7 +37,13 @@
     "packNpmRelationList": [],
     "minifyWXSS": true,
     "disableUseStrict": false,
-    "minifyWXML": true
+    "minifyWXML": true,
+    "compileWorklet": false,
+    "localPlugins": false,
+    "useCompilerPlugins": false,
+    "condition": false,
+    "swc": false,
+    "disableSWC": true
   },
   "compileType": "miniprogram",
   "libVersion": "3.3.4",
@@ -48,5 +54,6 @@
   "editorSetting": {
     "tabIndent": "insertSpaces",
     "tabSize": 2
-  }
+  },
+  "simulatorPluginLibVersion": {}
 }

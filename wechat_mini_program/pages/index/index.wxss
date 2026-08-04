@@ -291,3 +291,19 @@
   background: #047857;
   color: #FFFFFF;
 }
+
+.radio-group {
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+  margin-bottom: 16rpx;
+}
+
+.radio-label {
+  font-size: 26rpx;
+  color: #334155;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+}
+

@@ -37,7 +37,10 @@ const CROP_STAGE_MAP = {
 
 Page({
   data: {
+    apiMode: 'cloud',
     serverUrl: 'http://127.0.0.1:8000',
+    cloudEnvId: 'prod-crop-recognition',
+
     imagePath: '',
     isAnalyzing: false,
     resultData: null,
@@ -50,7 +53,9 @@ Page({
 
     // 弹窗状态
     showServerModal: false,
+    inputApiMode: 'cloud',
     inputServerUrl: '',
+    inputCloudEnvId: '',
 
     showFeedbackModal: false,
     cropOptions: [
@@ -65,15 +70,19 @@ Page({
   },
 
   onLoad: function () {
-    this.setData({
-      serverUrl: app.globalData.serverUrl || 'http://127.0.0.1:8000'
-    });
+    this.refreshConfigState();
     this.updateStageOptions('corn');
   },
 
   onShow: function () {
+    this.refreshConfigState();
+  },
+
+  refreshConfigState: function () {
     this.setData({
-      serverUrl: app.globalData.serverUrl
+      apiMode: app.globalData.apiMode || 'cloud',
+      serverUrl: app.globalData.serverUrl || 'http://127.0.0.1:8000',
+      cloudEnvId: app.globalData.cloudEnvId || 'prod-crop-recognition'
     });
   },
 
@@ -126,100 +135,129 @@ Page({
     }
 
     const that = this;
-    const apiUrl = app.getApiUrl('/api/recognize');
-
     this.setData({ isAnalyzing: true });
-    wx.showLoading({ title: 'AI 识别分析中...' });
+    wx.showLoading({ title: 'AI 深度诊断中...' });
 
-    wx.uploadFile({
-      url: apiUrl,
-      filePath: that.data.imagePath,
-      name: 'file',
-      success(res) {
-        wx.hideLoading();
-        that.setData({ isAnalyzing: false });
+    // 处理网络返回的数据
+    const handleSuccessData = function (data) {
+      wx.hideLoading();
+      that.setData({ isAnalyzing: false });
 
-        if (res.statusCode === 200) {
-          try {
-            const data = JSON.parse(res.data);
-            console.log("识别成功数据:", data);
+      const primary = data.primary_result || (data.top3 ? data.top3[0] : null);
+      const cropKey = data.crop || (primary ? primary.crop : 'corn');
+      const cropZh = data.crop_zh || (cropKey === 'corn' ? '玉米' : cropKey === 'wheat' ? '小麦' : '棉花');
 
-            // 解析主要识别结果
-            const primary = data.primary_result || (data.top3 ? data.top3[0] : null);
-            const cropKey = data.crop || (primary ? primary.crop : 'corn');
-            const cropZh = data.crop_zh || (cropKey === 'corn' ? '玉米' : cropKey === 'wheat' ? '小麦' : '棉花');
+      const stageZh = primary ? (primary.stage_zh || primary.stage) : '未知阶段';
+      const stageName = primary ? primary.stage : '';
+      const confidence = primary ? primary.confidence : 0.95;
+      const confidencePercent = (confidence * 100).toFixed(1);
 
-            const stageZh = primary ? (primary.stage_zh || primary.stage) : '未知阶段';
-            const stageName = primary ? primary.stage : '';
-            const confidence = primary ? primary.confidence : 0.95;
-            const confidencePercent = (confidence * 100).toFixed(1);
+      const processedTop3 = (data.top3 || []).map(item => ({
+        ...item,
+        stage_zh: item.stage_zh || item.stage,
+        confidencePercent: (item.confidence * 100).toFixed(1)
+      }));
 
-            const processedTop3 = (data.top3 || []).map(item => ({
-              ...item,
-              stage_zh: item.stage_zh || item.stage,
-              confidencePercent: (item.confidence * 100).toFixed(1)
-            }));
+      const processedResult = {
+        primaryCrop: cropKey,
+        cropZh: cropZh,
+        stageZh: stageZh,
+        stageName: stageName,
+        confidence: confidence,
+        confidencePercent: confidencePercent,
+        top3: processedTop3,
+        advice: data.advice || null,
+        recordId: data.record_id || Date.now()
+      };
 
-            const processedResult = {
-              primaryCrop: cropKey,
-              cropZh: cropZh,
-              stageZh: stageZh,
-              stageName: stageName,
-              confidence: confidence,
-              confidencePercent: confidencePercent,
-              top3: processedTop3,
-              advice: data.advice || null,
-              recordId: data.record_id || Date.now()
-            };
+      that.setData({ resultData: processedResult });
 
-            that.setData({ resultData: processedResult });
+      // 保存到本地历史记录
+      app.addHistoryRecord({
+        id: processedResult.recordId,
+        timestamp: new Date().toLocaleString(),
+        imagePath: that.data.imagePath,
+        cropZh: cropZh,
+        stageZh: stageZh,
+        confidence: (confidence * 100).toFixed(1) + '%'
+      });
 
-            // 保存到本地历史记录
-            app.addHistoryRecord({
-              id: processedResult.recordId,
-              timestamp: new Date().toLocaleString(),
-              imagePath: that.data.imagePath,
-              cropZh: cropZh,
-              stageZh: stageZh,
-              confidence: (confidence * 100).toFixed(1) + '%'
-            });
+      wx.showToast({
+        title: '识别完成！',
+        icon: 'success'
+      });
+    };
 
-            wx.showToast({
-              title: '识别完成！',
-              icon: 'success'
-            });
-
-          } catch (e) {
-            wx.showToast({
-              title: '数据解析失败: ' + e.message,
-              icon: 'none'
-            });
+    // 模式 A：微信云托管模式
+    if (this.data.apiMode === 'cloud') {
+      // 在微信云托管中，优先使用上传得到 cloudID 或直接调容器
+      wx.uploadFile({
+        url: app.getApiUrl('/api/recognize'),
+        filePath: that.data.imagePath,
+        name: 'file',
+        success(res) {
+          if (res.statusCode === 200) {
+            handleSuccessData(JSON.parse(res.data));
+          } else {
+            wx.hideLoading();
+            that.setData({ isAnalyzing: false });
+            wx.showToast({ title: '云端错误: ' + res.statusCode, icon: 'none' });
           }
-        } else {
-          wx.showToast({
-            title: '后端错误 (' + res.statusCode + ')',
-            icon: 'none'
+        },
+        fail(err) {
+          wx.hideLoading();
+          that.setData({ isAnalyzing: false });
+          // 回退提示
+          wx.showModal({
+            title: '微信云托管提示',
+            content: '尚未配置微信云托管环境 ID（' + that.data.cloudEnvId + '）。\n如果在本地测试，可在右上角“⚙️ 服务器”切换为“自定义 HTTP API 地址”模式。',
+            showCancel: false
           });
         }
-      },
-      fail(err) {
-        wx.hideLoading();
-        that.setData({ isAnalyzing: false });
-        console.error("上传失败详情:", err);
-        wx.showModal({
-          title: '网络连接失败',
-          content: '无法连接至 API 服务器 (' + apiUrl + ')。\n请检查后端 run_api.py 是否已启动，并确保手机/模拟器与服务器处于同一网络。',
-          showCancel: false
-        });
-      }
-    });
+      });
+
+    } else {
+      // 模式 B：自定义 HTTP API 地址模式
+      const apiUrl = app.getApiUrl('/api/recognize');
+      wx.uploadFile({
+        url: apiUrl,
+        filePath: that.data.imagePath,
+        name: 'file',
+        success(res) {
+          if (res.statusCode === 200) {
+            try {
+              handleSuccessData(JSON.parse(res.data));
+            } catch (e) {
+              wx.hideLoading();
+              that.setData({ isAnalyzing: false });
+              wx.showToast({ title: '解析失败', icon: 'none' });
+            }
+          } else {
+            wx.hideLoading();
+            that.setData({ isAnalyzing: false });
+            wx.showToast({ title: '后端错误 (' + res.statusCode + ')', icon: 'none' });
+          }
+        },
+        fail(err) {
+          wx.hideLoading();
+          that.setData({ isAnalyzing: false });
+          wx.showModal({
+            title: '网络连接失败',
+            content: '无法连接至 API 服务器 (' + apiUrl + ')。\n请检查后端 run_api.py 是否已启动，并确保手机/模拟器与服务器处于同一网络。',
+            showCancel: false
+          });
+        }
+      });
+    }
   },
 
-  // 3. 服务器配置弹窗
+  // 3. 服务器/云托管设置弹窗
   openServerModal: function () {
     this.setData({
       showServerModal: true,
-      inputServerUrl: this.data.serverUrl
+      inputApiMode: this.data.apiMode,
+      inputServerUrl: this.data.serverUrl,
+      inputCloudEnvId: this.data.cloudEnvId
     });
   },
 
@@ -227,26 +265,41 @@ Page({
     this.setData({ showServerModal: false });
   },
 
+  onModeChange: function (e) {
+    this.setData({ inputApiMode: e.detail.value });
+  },
+
   onServerInput: function (e) {
     this.setData({ inputServerUrl: e.detail.value });
   },
 
+  onEnvIdInput: function (e) {
+    this.setData({ inputCloudEnvId: e.detail.value });
+  },
+
   saveServerConfig: function () {
-    let url = this.data.inputServerUrl.trim();
-    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+    const mode = this.data.inputApiMode;
+    const url = this.data.inputServerUrl.trim();
+    const envId = this.data.inputCloudEnvId.trim() || 'prod-crop-recognition';
+
+    if (mode === 'custom' && (!url.startsWith('http://') && !url.startsWith('https://'))) {
       wx.showToast({
-        title: '请输入以 http:// 或 https:// 开头的有效地址',
+        title: '请输入有效 HTTP 地址',
         icon: 'none'
       });
       return;
     }
-    app.saveServerUrl(url);
+
+    app.saveApiConfig(mode, url, envId);
     this.setData({
+      apiMode: mode,
       serverUrl: url,
+      cloudEnvId: envId,
       showServerModal: false
     });
+
     wx.showToast({
-      title: '服务器配置已保存',
+      title: '设置已保存！',
       icon: 'success'
     });
   },
@@ -300,7 +353,6 @@ Page({
     const that = this;
 
     const apiUrl = app.getApiUrl('/api/feedback/upload');
-
     wx.showLoading({ title: '正在上传样本库...' });
 
     wx.uploadFile({
