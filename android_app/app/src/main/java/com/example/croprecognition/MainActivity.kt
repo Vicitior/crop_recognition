@@ -60,28 +60,21 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    // 当前选中的模型文件名 ("crop_model_int8.onnx" 或 "crop_model_fp32.onnx")
+    private var selectedModelFileName: String = "crop_model_int8.onnx"
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // 初始化本地数据库与服务器配置
+        // 初始化本地数据库与配置
         dbHelper = CropDatabaseHelper(this)
         loadServerConfig()
+        loadModelConfig()
 
-        // 异步初始化本地 ONNX 推理引擎
-        lifecycleScope.launch {
-            try {
-                recognitionEngine = CropRecognitionEngine(this@MainActivity, "crop_model_int8.onnx")
-            } catch (e: Exception) {
-                Toast.makeText(
-                    this@MainActivity,
-                    if (isEnglish) "Offline model init failed: ${e.message}" else "❌ 离线模型初始化失败: ${e.message}",
-                    Toast.LENGTH_LONG
-                ).show()
-                e.printStackTrace()
-            }
-        }
+        // 异步初始化选中的本地 ONNX AI 模型
+        initRecognitionEngine()
 
         // 按钮点击事件绑定
         binding.btnGallery.setOnClickListener {
@@ -102,6 +95,11 @@ class MainActivity : AppCompatActivity() {
             showCorrectionDialog(isUploadDirect = true)
         }
 
+        // 🤖 模型选择按钮绑定
+        binding.btnModelConfig.setOnClickListener {
+            showModelSelectDialog()
+        }
+
         // 服务器配置按钮绑定
         binding.btnServerConfig.setOnClickListener {
             showServerConfigDialog()
@@ -114,6 +112,59 @@ class MainActivity : AppCompatActivity() {
         }
 
         updateLanguageUI()
+    }
+
+    private fun loadModelConfig() {
+        val sp = getSharedPreferences("crop_app_config", Context.MODE_PRIVATE)
+        selectedModelFileName = sp.getString("selected_model", "crop_model_int8.onnx") ?: "crop_model_int8.onnx"
+    }
+
+    private fun initRecognitionEngine() {
+        lifecycleScope.launch {
+            try {
+                recognitionEngine?.close()
+                recognitionEngine = CropRecognitionEngine(this@MainActivity, selectedModelFileName)
+            } catch (e: Exception) {
+                Toast.makeText(
+                    this@MainActivity,
+                    if (isEnglish) "Offline model init failed: ${e.message}" else "❌ 离线模型初始化失败: ${e.message}",
+                    Toast.LENGTH_LONG
+                ).show()
+                e.printStackTrace()
+            }
+        }
+    }
+
+    private fun showModelSelectDialog() {
+        val options = arrayOf(
+            if (isEnglish) "⚡ INT8 Quantized (~293MB - Recommended for mobile)" else "⚡ INT8 量化轻量版 (~293MB·推荐手机使用)",
+            if (isEnglish) "💎 FP32 Full Precision (~1.2GB - For flagship/PC)" else "💎 FP32 原生高精度版 (~1.2GB·适合高性能设备)"
+        )
+
+        val currentIdx = if (selectedModelFileName == "crop_model_fp32.onnx") 1 else 0
+
+        AlertDialog.Builder(this)
+            .setTitle(if (isEnglish) "🤖 Select AI Model Version" else "🤖 选择 AI 模型版本")
+            .setSingleChoiceItems(options, currentIdx) { dialog, which ->
+                val newModel = if (which == 1) "crop_model_fp32.onnx" else "crop_model_int8.onnx"
+                if (newModel != selectedModelFileName) {
+                    selectedModelFileName = newModel
+                    getSharedPreferences("crop_app_config", Context.MODE_PRIVATE)
+                        .edit().putString("selected_model", newModel).apply()
+
+                    initRecognitionEngine()
+
+                    Toast.makeText(
+                        this,
+                        if (isEnglish) "Model switched to: ${if (which == 1) "FP32 Native" else "INT8 Quantized"}"
+                        else "✅ AI 模型已切换为: ${if (which == 1) "FP32 原生高精度版" else "INT8 量化轻量版"}",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+                dialog.dismiss()
+            }
+            .setNegativeButton(if (isEnglish) "Cancel" else "取消", null)
+            .show()
     }
 
     private fun loadServerConfig() {

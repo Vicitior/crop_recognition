@@ -28,17 +28,37 @@ class CropRecognitionEngine(context: Context, modelFileName: String = "crop_mode
     )
 
     init {
-        // 1. 将 293MB 大模型文件从小块 Buffer 拷贝到应用内部存储，防止 Java 堆内存溢出 (OOM)
-        val modelFile = File(context.filesDir, modelFileName)
-        if (!modelFile.exists() || modelFile.length() < 100 * 1024 * 1024) {
-            context.assets.open(modelFileName).use { inputStream ->
-                FileOutputStream(modelFile).use { outputStream ->
-                    val buffer = ByteArray(64 * 1024) // 64KB 小缓冲区
-                    var bytesRead: Int
-                    while (inputStream.read(buffer).also { bytesRead = it } != -1) {
-                        outputStream.write(buffer, 0, bytesRead)
+        // 1. 将 ONNX 模型文件从小块 Buffer 拷贝到应用内部存储，防止 Java 堆内存溢出 (OOM)
+        var modelFile = File(context.filesDir, modelFileName)
+        if (!modelFile.exists() || modelFile.length() < 10 * 1024 * 1024) {
+            try {
+                context.assets.open(modelFileName).use { inputStream ->
+                    FileOutputStream(modelFile).use { outputStream ->
+                        val buffer = ByteArray(64 * 1024) // 64KB 小缓冲区
+                        var bytesRead: Int
+                        while (inputStream.read(buffer).also { bytesRead = it } != -1) {
+                            outputStream.write(buffer, 0, bytesRead)
+                        }
+                        outputStream.flush()
                     }
-                    outputStream.flush()
+                }
+            } catch (e: Exception) {
+                // 如果选中的模型（如 FP32 大模型）未放置在 APK assets 中，自动读取内置的 INT8 量化模型
+                val defaultFile = File(context.filesDir, "crop_model_int8.onnx")
+                if (defaultFile.exists() && defaultFile.length() >= 100 * 1024 * 1024) {
+                    modelFile = defaultFile
+                } else {
+                    context.assets.open("crop_model_int8.onnx").use { inputStream ->
+                        FileOutputStream(defaultFile).use { outputStream ->
+                            val buffer = ByteArray(64 * 1024)
+                            var bytesRead: Int
+                            while (inputStream.read(buffer).also { bytesRead = it } != -1) {
+                                outputStream.write(buffer, 0, bytesRead)
+                            }
+                            outputStream.flush()
+                        }
+                    }
+                    modelFile = defaultFile
                 }
             }
         }

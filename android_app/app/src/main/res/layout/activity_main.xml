@@ -83,16 +83,30 @@
                         android:orientation="horizontal">
 
                         <Button
+                            android:id="@+id/btnModelConfig"
+                            android:layout_width="wrap_content"
+                            android:layout_height="36dp"
+                            android:layout_marginEnd="6dp"
+                            android:backgroundTint="#0284C7"
+                            android:paddingHorizontal="10dp"
+                            android:paddingVertical="0dp"
+                            android:text="🤖 模型"
+                            android:textColor="@android:color/white"
+                            android:textSize="11sp"
+                            android:textStyle="bold"
+                            app:cornerRadius="18dp" />
+
+                        <Button
                             android:id="@+id/btnServerConfig"
                             android:layout_width="wrap_content"
                             android:layout_height="36dp"
-                            android:layout_marginEnd="8dp"
+                            android:layout_marginEnd="6dp"
                             android:backgroundTint="#047857"
-                            android:paddingHorizontal="12dp"
+                            android:paddingHorizontal="10dp"
                             android:paddingVertical="0dp"
                             android:text="⚙️ 服务器"
                             android:textColor="@android:color/white"
-                            android:textSize="12sp"
+                            android:textSize="11sp"
                             android:textStyle="bold"
                             app:cornerRadius="18dp" />
 
@@ -101,11 +115,11 @@
                             android:layout_width="wrap_content"
                             android:layout_height="36dp"
                             android:backgroundTint="#475569"
-                            android:paddingHorizontal="12dp"
+                            android:paddingHorizontal="10dp"
                             android:paddingVertical="0dp"
                             android:text="🌐 EN/中"
                             android:textColor="@android:color/white"
-                            android:textSize="12sp"
+                            android:textSize="11sp"
                             android:textStyle="bold"
                             app:cornerRadius="18dp" />
                     </LinearLayout>
