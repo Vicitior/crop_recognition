@@ -9,10 +9,10 @@ ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     TZ=Asia/Shanghai
 
-# 安装系统依赖（图片处理与基础工具）
+# 安装系统依赖（使用兼容 Debian 12 的 libgl1 替代过期的 libgl1-mesa-glx）
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
-    libgl1-mesa-glx \
+    libgl1 \
     libglib2.0-0 \
     curl \
     && rm -rf /var/lib/apt/lists/*
@@ -21,7 +21,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
 
-# 复制项目所有代码与保存的模型权重
+# 复制项目代码与保存的模型权重
 COPY . .
 
 # 暴露 8000 端口（微信云托管默认通信端口）
