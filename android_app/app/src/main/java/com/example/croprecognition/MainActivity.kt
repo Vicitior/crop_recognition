@@ -31,6 +31,34 @@ class MainActivity : AppCompatActivity() {
 
     // 默认后端服务器地址 (可在 App 内点击“⚙️ 服务器”按钮任意修改)
     private var serverBaseUrl: String = "http://10.0.2.2:8000"
+    // 1. 从相册选择图片回调
+    private val pickGalleryLauncher = registerForActivityResult(
+        ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        uri?.let { handleSelectedImage(it) }
+    }
+
+    // 2. 拍照识别回调
+    private val takePictureLauncher = registerForActivityResult(
+        ActivityResultContracts.TakePicturePreview()
+    ) { bitmap: Bitmap? ->
+        bitmap?.let { processAndRecognize(it) }
+    }
+
+    // 3. 相机运行时权限申请回调
+    private val requestCameraPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted: Boolean ->
+        if (isGranted) {
+            takePictureLauncher.launch(null)
+        } else {
+            Toast.makeText(
+                this,
+                if (isEnglish) "Camera permission denied" else "相机权限被拒绝，无法拍照",
+                Toast.LENGTH_SHORT
+            ).show()
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
