@@ -34,6 +34,9 @@ android {
     buildFeatures {
         viewBinding = true
     }
+    androidResources {
+        noCompress.add("onnx")
+    }
 }
 
 dependencies {
